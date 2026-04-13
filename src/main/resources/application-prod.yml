@@ -19,12 +19,6 @@ app:
   upload:
     audio-dir: ${AUDIO_UPLOAD_DIR:/app/uploads/audio/}
 
-springdoc:
-  swagger-ui:
-    enabled: false
-  api-docs:
-    enabled: false
-
 logging:
   level:
     root: WARN
