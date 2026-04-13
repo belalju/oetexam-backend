@@ -36,7 +36,7 @@ openssl rand -base64 64
 ### 3. Build and start
 
 ```bash
-docker compose -f docker-compose.prod.yml --env-file .env up -d --build
+docker compose --env-file .env up -d --build
 ```
 
 This builds the image from source and starts both the app and database containers.
@@ -44,7 +44,7 @@ This builds the image from source and starts both the app and database container
 ### 4. Verify
 
 ```bash
-docker compose -f docker-compose.prod.yml ps
+docker compose ps
 docker logs oetexam-app --tail 50
 curl http://localhost:8088/actuator/health
 ```
@@ -57,7 +57,7 @@ Pull the latest code and rebuild:
 
 ```bash
 git pull
-docker compose -f docker-compose.prod.yml --env-file .env up -d --build --no-deps app
+docker compose  --env-file .env up -d --build --no-deps app
 ```
 
 ---
@@ -69,10 +69,10 @@ docker compose -f docker-compose.prod.yml --env-file .env up -d --build --no-dep
 docker logs -f oetexam-app
 
 # Stop containers
-docker compose -f docker-compose.prod.yml down
+docker compose  down
 
 # Stop and wipe all data (irreversible)
-docker compose -f docker-compose.prod.yml down -v
+docker compose  down -v
 
 # Open a shell inside the app container
 docker exec -it oetexam-app sh
