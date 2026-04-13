@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  app:
+    image: oetexam:latest
+    container_name: oetexam-app
+    restart: unless-stopped
+    ports:
+      - "8088:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:mysql://db:3306/oet_practice?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ACCESS_EXPIRATION_MS: ${JWT_ACCESS_EXPIRATION_MS:-3600000}
+      JWT_REFRESH_EXPIRATION_MS: ${JWT_REFRESH_EXPIRATION_MS:-604800000}
+      AUDIO_UPLOAD_DIR: /app/uploads/audio/
+    volumes:
+      - audio_uploads:/app/uploads/audio
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - oetexam-net
+
+  db:
+    image: mysql:8.0
+    container_name: oetexam-db
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3306:3306"   # bind to localhost only — not exposed publicly
+    environment:
+      MYSQL_DATABASE: oet_practice
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - oetexam-net
+
+volumes:
+  mysql_data:
+  audio_uploads:
+
+networks:
+  oetexam-net:
+    driver: bridge

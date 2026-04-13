@@ -1,0 +1,40 @@
+# ─── Maven ───────────────────────────────────────────────
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# ─── Spring Boot ─────────────────────────────────────────
+*.jar
+*.war
+*.ear
+
+# ─── Environment & Secrets ───────────────────────────────
+.env
+*.env
+!.env.prod.example
+
+# ─── Uploads (runtime-generated files) ───────────────────
+uploads/
+
+# ─── IntelliJ IDEA ───────────────────────────────────────
+.idea/
+!.idea/.gitignore
+*.iml
+*.iws
+*.ipr
+out/
+
+# ─── VS Code ─────────────────────────────────────────────
+.vscode/
+
+# ─── OS ──────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ─── Docker artifacts ────────────────────────────────────
+*.tar.gz
+
+# ─── Logs ────────────────────────────────────────────────
+*.log
+logs/
