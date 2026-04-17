@@ -8,9 +8,6 @@ import java.util.List;
 
 public interface QuestionRepository extends JpaRepository<Question, Long> {
 
-    @Query("SELECT q FROM Question q JOIN q.questionGroup qg JOIN qg.testPart tp WHERE tp.test.id = :testId")
-    List<Question> findAllByTestId(Long testId);
-
     @Query("""
             SELECT q FROM Question q
             LEFT JOIN FETCH q.correctAnswer ca
@@ -19,4 +16,6 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
             WHERE tp.test.id = :testId
             """)
     List<Question> findAllByTestIdWithCorrectAnswers(Long testId);
+
+    List<Question> findByQuestionGroupIdOrderBySortOrderAsc(Long groupId);
 }

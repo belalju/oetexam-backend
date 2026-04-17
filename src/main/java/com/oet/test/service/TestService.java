@@ -53,10 +53,10 @@ public class TestService {
     }
 
     @Transactional(readOnly = true)
-    public TestDetailResponse adminGetTestDetail(Long testId) {
-        OetTest test = testRepository.findWithFullDetailById(testId)
-                .orElseThrow(() -> new NotFoundException("Test not found: " + testId));
-        return toDetail(test, true);
+    public TestSummaryResponse getTestInformation(Long testId) {
+        OetTest oetTest = testRepository.findById(testId)
+            .orElseThrow(() -> new NotFoundException("Test not found: " + testId));
+        return toSummary(oetTest);
     }
 
     @Transactional
@@ -117,6 +117,12 @@ public class TestService {
     @Transactional
     public void deletePart(Long partId) {
         testPartRepository.delete(findPartById(partId));
+    }
+
+    @Transactional(readOnly = true)
+    public List<TestPartResponse> getTestPartList(Long testId) {
+        List<TestPart> testPartList = testPartRepository.findByTestIdOrderBySortOrderAsc(testId);
+        return testPartList.stream().map(part -> toPartResponse(part, false)).toList();
     }
 
     // ── Passages ─────────────────────────────────────────────────────────
@@ -187,6 +193,45 @@ public class TestService {
     @Transactional
     public void deleteQuestionGroup(Long groupId) {
         questionGroupRepository.delete(findGroupById(groupId));
+    }
+
+    @Transactional(readOnly = true)
+    public TestPartResponse getPartById(Long partId) {
+        return toPartResponse(findPartById(partId), true);
+    }
+
+    @Transactional(readOnly = true)
+    public TextPassageResponse getPassageById(Long passageId) {
+        TextPassage passage = textPassageRepository.findById(passageId)
+                .orElseThrow(() -> new NotFoundException("Passage not found: " + passageId));
+        return toPassageResponse(passage);
+    }
+
+    @Transactional(readOnly = true)
+    public QuestionGroupResponse getQuestionGroupById(Long groupId) {
+        return toGroupResponse(findGroupById(groupId), true);
+    }
+
+    @Transactional(readOnly = true)
+    public List<QuestionGroupResponse> getQuestionGroupsByTestId(Long testId) {
+        if (!testRepository.existsById(testId)) {
+            throw new NotFoundException("Test not found: " + testId);
+        }
+        return questionGroupRepository.findByTestPartTestIdOrderBySortOrderAsc(testId)
+                .stream()
+                .map(g -> toGroupResponse(g, true))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<TextPassageResponse> getPassagesByTestId(Long testId) {
+        if (!testRepository.existsById(testId)) {
+            throw new NotFoundException("Test not found: " + testId);
+        }
+        return textPassageRepository.findByTestPartTestIdOrderBySortOrderAsc(testId)
+                .stream()
+                .map(this::toPassageResponse)
+                .toList();
     }
 
     // ── Applicant operations ──────────────────────────────────────────────

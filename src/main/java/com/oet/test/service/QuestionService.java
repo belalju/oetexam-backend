@@ -69,7 +69,7 @@ public class QuestionService {
         correctAnswerRepository.save(correctAnswer);
 
         log.info("Question created: id={}, number={}", question.getId(), question.getQuestionNumber());
-        return toResponse(question, savedOptions, correctAnswer, true);
+        return toResponse(question, savedOptions, correctAnswer);
     }
 
     @Transactional
@@ -87,7 +87,24 @@ public class QuestionService {
             if (request.alternativeAnswers() != null) ca.setAlternativeAnswers(request.alternativeAnswers());
         }
 
-        return toResponse(question, question.getOptions(), ca, true);
+        return toResponse(question, question.getOptions(), ca);
+    }
+
+    @Transactional(readOnly = true)
+    public QuestionResponse getQuestionById(Long questionId) {
+        Question question = findById(questionId);
+        return toResponse(question, question.getOptions(), question.getCorrectAnswer());
+    }
+
+    @Transactional(readOnly = true)
+    public List<QuestionResponse> getQuestionsByGroupId(Long groupId) {
+        if (!questionGroupRepository.existsById(groupId)) {
+            throw new NotFoundException("Question group not found: " + groupId);
+        }
+        return questionRepository.findByQuestionGroupIdOrderBySortOrderAsc(groupId)
+                .stream()
+                .map(q -> toResponse(q, q.getOptions(), q.getCorrectAnswer()))
+                .toList();
     }
 
     @Transactional
@@ -100,13 +117,13 @@ public class QuestionService {
                 .orElseThrow(() -> new NotFoundException("Question not found: " + id));
     }
 
-    private QuestionResponse toResponse(Question q, List<QuestionOption> options, CorrectAnswer ca, boolean includeAnswer) {
+    private QuestionResponse toResponse(Question q, List<QuestionOption> options, CorrectAnswer ca) {
         List<QuestionOptionResponse> optResponses = options.stream()
                 .map(o -> new QuestionOptionResponse(o.getId(), o.getOptionLabel(), o.getOptionText(), o.getSortOrder()))
                 .toList();
 
         CorrectAnswerResponse caResponse = null;
-        if (includeAnswer && ca != null) {
+        if (ca != null) {
             Long correctOptionId = ca.getCorrectOption() != null ? ca.getCorrectOption().getId() : null;
             caResponse = new CorrectAnswerResponse(correctOptionId, ca.getCorrectText(), ca.getAlternativeAnswers());
         }

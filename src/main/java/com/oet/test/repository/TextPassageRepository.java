@@ -7,5 +7,5 @@ import java.util.List;
 
 public interface TextPassageRepository extends JpaRepository<TextPassage, Long> {
 
-    List<TextPassage> findByTestPartIdOrderBySortOrderAsc(Long testPartId);
+    List<TextPassage> findByTestPartTestIdOrderBySortOrderAsc(Long testId);
 }

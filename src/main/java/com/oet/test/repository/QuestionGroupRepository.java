@@ -7,5 +7,5 @@ import java.util.List;
 
 public interface QuestionGroupRepository extends JpaRepository<QuestionGroup, Long> {
 
-    List<QuestionGroup> findByTestPartIdOrderBySortOrderAsc(Long testPartId);
+    List<QuestionGroup> findByTestPartTestIdOrderBySortOrderAsc(Long testId);
 }
