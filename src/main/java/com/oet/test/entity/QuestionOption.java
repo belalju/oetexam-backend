@@ -23,7 +23,7 @@ public class QuestionOption {
     @Column(name = "option_label", nullable = false, length = 1)
     private Character optionLabel;
 
-    @Column(name = "option_text", nullable = false, columnDefinition = "TEXT")
+    @Column(name = "option_text", columnDefinition = "TEXT")
     private String optionText;
 
     @Column(name = "sort_order", nullable = false)

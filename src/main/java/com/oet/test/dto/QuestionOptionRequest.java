@@ -7,7 +7,6 @@ public record QuestionOptionRequest(
         @NotNull(message = "Option label is required")
         Character optionLabel,
 
-        @NotBlank(message = "Option text is required")
         String optionText,
 
         Integer sortOrder
