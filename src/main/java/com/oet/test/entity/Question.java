@@ -27,7 +27,7 @@ public class Question {
     @Column(name = "question_number", nullable = false)
     private Integer questionNumber;
 
-    @Column(name = "question_text", nullable = false, columnDefinition = "TEXT")
+    @Column(name = "question_text", columnDefinition = "TEXT")
     private String questionText;
 
     @Column(name = "prefix_text", columnDefinition = "TEXT")
@@ -45,7 +45,7 @@ public class Question {
     @Builder.Default
     private List<QuestionOption> options = new ArrayList<>();
 
-    @OneToOne(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private CorrectAnswer correctAnswer;
 }
