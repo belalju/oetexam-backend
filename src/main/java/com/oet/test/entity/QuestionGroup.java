@@ -3,6 +3,8 @@ package com.oet.test.entity;
 import com.oet.test.enums.QuestionType;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +30,7 @@ public class QuestionGroup {
     @JoinColumn(name = "passage_id")
     private TextPassage passage;
 
-    @Column(length = 255)
+    @Column
     private String title;
 
     @Column(columnDefinition = "TEXT")
@@ -44,6 +46,7 @@ public class QuestionGroup {
 
     @OneToMany(mappedBy = "questionGroup", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("sortOrder ASC")
+    @Fetch(FetchMode.SUBSELECT)
     @Builder.Default
     private List<Question> questions = new ArrayList<>();
 }

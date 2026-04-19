@@ -3,6 +3,8 @@ package com.oet.test.entity;
 import com.oet.test.enums.PartLabel;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,11 +44,13 @@ public class TestPart {
 
     @OneToMany(mappedBy = "testPart", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("sortOrder ASC")
+    @Fetch(FetchMode.SUBSELECT)
     @Builder.Default
     private List<TextPassage> passages = new ArrayList<>();
 
     @OneToMany(mappedBy = "testPart", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("sortOrder ASC")
+    @Fetch(FetchMode.SUBSELECT)
     @Builder.Default
     private List<QuestionGroup> questionGroups = new ArrayList<>();
 }
