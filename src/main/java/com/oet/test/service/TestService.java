@@ -59,6 +59,13 @@ public class TestService {
         return toSummary(oetTest);
     }
 
+    @Transactional(readOnly = true)
+    public TestDetailResponse adminGetTestDetail(Long testId) {
+        OetTest test = testRepository.findWithFullDetailById(testId)
+                .orElseThrow(() -> new NotFoundException("Test not found: " + testId));
+        return toDetail(test, true);
+    }
+
     @Transactional
     public TestSummaryResponse updateTest(Long testId, TestCreateRequest request) {
         OetTest test = findTestById(testId);
@@ -98,6 +105,7 @@ public class TestService {
         TestPart part = TestPart.builder()
                 .test(test)
                 .partLabel(request.partLabel())
+                .title(request.title())
                 .timeLimitMinutes(request.timeLimitMinutes())
                 .instructions(request.instructions())
                 .sortOrder(request.sortOrder() != null ? request.sortOrder() : 0)
@@ -108,6 +116,7 @@ public class TestService {
     @Transactional
     public TestPartResponse updatePart(Long partId, TestPartRequest request) {
         TestPart part = findPartById(partId);
+        part.setTitle(request.title());
         part.setTimeLimitMinutes(request.timeLimitMinutes());
         part.setInstructions(request.instructions());
         if (request.sortOrder() != null) part.setSortOrder(request.sortOrder());
@@ -296,8 +305,8 @@ public class TestService {
                 .map(this::toPassageResponse).toList();
         List<QuestionGroupResponse> groups = part.getQuestionGroups().stream()
                 .map(g -> toGroupResponse(g, includeAnswers)).toList();
-        return new TestPartResponse(part.getId(), part.getPartLabel(), part.getTimeLimitMinutes(),
-                part.getInstructions(), part.getSortOrder(), passages, groups);
+        return new TestPartResponse(part.getId(), part.getPartLabel(), part.getTitle(),
+                part.getTimeLimitMinutes(), part.getInstructions(), part.getSortOrder(), passages, groups);
     }
 
     private TextPassageResponse toPassageResponse(TextPassage p) {

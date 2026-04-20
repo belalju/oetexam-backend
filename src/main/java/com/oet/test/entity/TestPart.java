@@ -28,6 +28,9 @@ public class TestPart {
     @JoinColumn(name = "test_id", nullable = false)
     private OetTest test;
 
+    @Column
+    private String title;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "part_label", nullable = false, length = 10)
     private PartLabel partLabel;

@@ -7,6 +7,7 @@ import java.util.List;
 public record TestPartResponse(
         Long id,
         PartLabel partLabel,
+        String title,
         Integer timeLimitMinutes,
         String instructions,
         Integer sortOrder,

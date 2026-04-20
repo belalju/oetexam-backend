@@ -2,6 +2,7 @@ package com.oet.test.controller;
 
 import com.oet.common.util.ApiResponse;
 import com.oet.test.dto.TestCreateRequest;
+import com.oet.test.dto.TestDetailResponse;
 import com.oet.test.dto.TestSummaryResponse;
 import com.oet.test.service.TestService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -42,10 +43,16 @@ public class AdminTestController {
         return ResponseEntity.ok(ApiResponse.success(testService.adminListTests(pageable)));
     }
 
-    @Operation(summary = "Get test information")
-    @GetMapping("/tests/{testId}")
+    @Operation(summary = "Get test summary")
+    @GetMapping("/tests/{testId}/summary")
     public ResponseEntity<ApiResponse<TestSummaryResponse>> getTestInformation(@PathVariable Long testId) {
         return ResponseEntity.ok(ApiResponse.success(testService.getTestInformation(testId)));
+    }
+
+    @Operation(summary = "Get full test detail with parts, passages and questions")
+    @GetMapping("/tests/{testId}")
+    public ResponseEntity<ApiResponse<TestDetailResponse>> getTestDetail(@PathVariable Long testId) {
+        return ResponseEntity.ok(ApiResponse.success(testService.adminGetTestDetail(testId)));
     }
 
     @Operation(summary = "Update test metadata")

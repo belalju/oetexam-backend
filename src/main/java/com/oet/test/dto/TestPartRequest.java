@@ -7,6 +7,7 @@ public record TestPartRequest(
         @NotNull(message = "Part label is required")
         PartLabel partLabel,
 
+        String title,
         Integer timeLimitMinutes,
         String instructions,
         Integer sortOrder
