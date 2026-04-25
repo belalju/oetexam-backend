@@ -23,7 +23,7 @@ public class MediaController {
     private final MediaStorageService mediaStorageService;
 
     @PostMapping("/upload")
-//    @PreAuthorize("hasRole('ADMIN')") // temporarily disabled
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Map<String, String>>> uploadAudio(
             @RequestParam("file") MultipartFile file) {
         String filename = mediaStorageService.storeAudioFile(file);
@@ -32,7 +32,7 @@ public class MediaController {
     }
 
     @GetMapping("/{filename}")
-//    @PreAuthorize("hasRole('ADMIN')") // temporarily disabled
+    @PreAuthorize("hasAnyRole('ADMIN', 'APPLICANT')")
     public ResponseEntity<Resource> streamAudio(@PathVariable String filename) {
         Resource resource = mediaStorageService.loadAudioFile(filename);
 
@@ -46,7 +46,7 @@ public class MediaController {
     }
 
     @DeleteMapping("/{filename}")
-//    @PreAuthorize("hasRole('ADMIN')") // temporarily disabled
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteAudio(@PathVariable String filename) {
         mediaStorageService.deleteAudioFile(filename);
         return ResponseEntity.ok(ApiResponse.success(null));

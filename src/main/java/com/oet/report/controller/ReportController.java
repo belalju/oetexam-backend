@@ -17,13 +17,13 @@ public class ReportController {
     private final ReportService reportService;
 
     @GetMapping("/test/{testId}")
-//    @PreAuthorize("hasRole('ADMIN')") // temporarily disabled
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<TestAnalyticsResponse>> getTestAnalytics(@PathVariable Long testId) {
         return ResponseEntity.ok(ApiResponse.success(reportService.getTestAnalytics(testId)));
     }
 
     @GetMapping("/user/{userId}")
-//    @PreAuthorize("hasRole('ADMIN')") // temporarily disabled
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<UserScoreReport>> getUserReport(@PathVariable Long userId) {
         return ResponseEntity.ok(ApiResponse.success(reportService.getUserReport(userId)));
     }
