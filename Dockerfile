@@ -13,7 +13,7 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 COPY --from=build /app/target/*.jar app.jar
 
-RUN mkdir -p /app/uploads/audio && chown -R appuser:appgroup /app/uploads
+RUN mkdir -p /app/uploads/audio /app/logs && chown -R appuser:appgroup /app/uploads /app/logs
 
 USER appuser
 
