@@ -20,7 +20,7 @@ services:
       LOG_DIR: /app/logs
     volumes:
       - audio_uploads:/app/uploads/audio
-      - ./logs:/app/logs
+      - app_logs:/app/logs
     depends_on:
       db:
         condition: service_healthy
@@ -51,6 +51,7 @@ services:
 volumes:
   mysql_data:
   audio_uploads:
+  app_logs:
 
 networks:
   oetexam-net:

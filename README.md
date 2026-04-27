@@ -80,6 +80,36 @@ docker exec -it oetexam-app sh
 
 ---
 
+## Logs
+
+Only `ERROR` level entries are written to file. Logs are stored in a named Docker volume (`app_logs`) mounted at `/app/logs` inside the container.
+
+### Tail errors live
+
+```bash
+docker exec oetexam-app tail -f /app/logs/error.log
+```
+
+### Copy log file to the current host directory
+
+```bash
+docker cp oetexam-app:/app/logs/error.log ./error.log
+```
+
+### Access via Docker volume path (Linux hosts only)
+
+```bash
+# Find the volume mount path on the host
+docker volume inspect oetexam_app_logs
+
+# Logs are at
+/var/lib/docker/volumes/oetexam_app_logs/_data/error.log
+```
+
+Logs rotate daily and are kept for 30 days (max 500 MB total). Rotated files are named `error.YYYY-MM-DD.log`.
+
+---
+
 ## Environment Variables
 
 | Variable | Required | Description |
