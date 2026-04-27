@@ -17,8 +17,10 @@ services:
       JWT_ACCESS_EXPIRATION_MS: ${JWT_ACCESS_EXPIRATION_MS:-3600000}
       JWT_REFRESH_EXPIRATION_MS: ${JWT_REFRESH_EXPIRATION_MS:-604800000}
       AUDIO_UPLOAD_DIR: /app/uploads/audio/
+      LOG_DIR: /app/logs
     volumes:
       - audio_uploads:/app/uploads/audio
+      - ./logs:/app/logs
     depends_on:
       db:
         condition: service_healthy

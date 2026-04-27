@@ -20,6 +20,8 @@ app:
     audio-dir: ${AUDIO_UPLOAD_DIR:/app/uploads/audio/}
 
 logging:
+  file:
+    path: ${LOG_DIR:/app/logs}
   level:
     root: WARN
     com.oet: INFO

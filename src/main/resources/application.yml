@@ -52,6 +52,4 @@ springdoc:
     path: /swagger-ui.html
 
 logging:
-  level:
-    root: INFO
-    com.oet: DEBUG
+  config: classpath:logback-spring.xml
