@@ -12,9 +12,12 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @Tag(name = "Users")
 @RestController
@@ -37,5 +40,19 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<UserProfileDto>> getUserById(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.success(userService.getUserById(id)));
+    }
+
+    @Operation(summary = "Get all applicants (admin only)")
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<List<UserProfileDto>>> getAllApplicants() {
+        return ResponseEntity.ok(ApiResponse.success(userService.getAllApplicants()));
+    }
+
+    @Operation(summary = "Toggle user active/inactive status (admin only)")
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<UserProfileDto>> toggleUserStatus(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success(userService.toggleUserStatus(id)));
     }
 }
