@@ -52,12 +52,12 @@ public class QuestionService {
         }
 
         QuestionOption correctOption = null;
-        if (request.correctOptionId() != null) {
-            final Long correctOptionId = request.correctOptionId();
+        if (request.correctOptionLabel() != null) {
+            final Character label = request.correctOptionLabel();
             correctOption = savedOptions.stream()
-                    .filter(o -> o.getId().equals(correctOptionId))
+                    .filter(o -> o.getOptionLabel().equals(label))
                     .findFirst()
-                    .orElseThrow(() -> new NotFoundException("Correct option not found in saved options"));
+                    .orElseThrow(() -> new NotFoundException("Correct option not found with label: " + label));
         }
 
         CorrectAnswer correctAnswer = CorrectAnswer.builder()

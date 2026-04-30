@@ -20,7 +20,7 @@ public record QuestionCreateRequest(
         @Valid
         List<QuestionOptionRequest> options,
 
-        Long correctOptionId,
+        Character correctOptionLabel,
         String correctText,
         List<String> alternativeAnswers
 ) {}
