@@ -255,6 +255,7 @@ public class AttemptService {
         CorrectAnswer ca = q.getCorrectAnswer();
 
         Long selectedOptionId = answer.getSelectedOption() != null ? answer.getSelectedOption().getId() : null;
+        Character selectedOptionLabel = answer.getSelectedOption() != null ? answer.getSelectedOption().getOptionLabel() : null;
         Long correctOptionId = ca != null && ca.getCorrectOption() != null ? ca.getCorrectOption().getId() : null;
         Character optionLabel = ca != null && ca.getCorrectOption() != null ? ca.getCorrectOption().getOptionLabel() : null;
         String correctText = ca != null ? ca.getCorrectText() : null;
@@ -264,6 +265,7 @@ public class AttemptService {
                 q.getQuestionNumber(),
                 q.getQuestionText(),
                 selectedOptionId,
+                selectedOptionLabel,
                 answer.getAnswerText(),
                 correctOptionId,
                 optionLabel,

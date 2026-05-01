@@ -5,6 +5,7 @@ public record AttemptAnswerResult(
         Integer questionNumber,
         String questionText,
         Long selectedOptionId,
+        Character selectedOptionLabel,
         String answerText,
         Long correctOptionId,
         Character optionLabel,

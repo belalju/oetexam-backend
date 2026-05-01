@@ -90,14 +90,45 @@ public class QuestionService {
         question.setPrefixText(request.prefixText());
         question.setSuffixText(request.suffixText());
         if (request.sortOrder() != null) question.setSortOrder(request.sortOrder());
+        questionRepository.save(question);
+
+        List<QuestionOption> currentOptions;
+        if (request.options() != null) {
+            questionOptionRepository.deleteAll(question.getOptions());
+            currentOptions = new ArrayList<>();
+            for (QuestionOptionRequest optReq : request.options()) {
+                QuestionOption option = QuestionOption.builder()
+                        .question(question)
+                        .optionLabel(optReq.optionLabel())
+                        .optionText(optReq.optionText())
+                        .sortOrder(optReq.sortOrder() != null ? optReq.sortOrder() : 0)
+                        .build();
+                currentOptions.add(questionOptionRepository.save(option));
+            }
+        } else {
+            currentOptions = question.getOptions();
+        }
 
         CorrectAnswer ca = correctAnswerRepository.findByQuestionId(questionId).orElse(null);
         if (ca != null) {
             ca.setCorrectText(request.correctText());
             if (request.alternativeAnswers() != null) ca.setAlternativeAnswers(request.alternativeAnswers());
+
+            if (request.correctOptionLabel() != null) {
+                final Character label = request.correctOptionLabel();
+                QuestionOption correctOption = currentOptions.stream()
+                        .filter(o -> o.getOptionLabel().equals(label))
+                        .findFirst()
+                        .orElseThrow(() -> new NotFoundException("Correct option not found with label: " + label));
+                ca.setCorrectOption(correctOption);
+            } else if (request.options() != null) {
+                // options replaced but no correctOptionLabel — clear stale reference
+                ca.setCorrectOption(null);
+            }
+            correctAnswerRepository.save(ca);
         }
 
-        return toResponse(question, question.getOptions(), ca);
+        return toResponse(question, currentOptions, ca);
     }
 
     @Transactional(readOnly = true)
