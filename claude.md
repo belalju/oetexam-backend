@@ -18,8 +18,9 @@ This project is a Spring Boot-based backend service designed for scalability, se
 
 ### General Rules
 
+* Follow Google Java Style Guide or Oracle Code Conventions consistently
 * Follow SOLID principles
-* Prefer composition over inheritance
+* Prefer to composition over inheritance
 * Keep classes < 300 lines
 * Keep methods < 30 lines
 * Use meaningful names (no abbreviations)

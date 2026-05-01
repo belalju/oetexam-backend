@@ -2,9 +2,29 @@ package com.oet.test.service;
 
 import com.oet.common.exception.BusinessException;
 import com.oet.common.exception.NotFoundException;
-import com.oet.test.dto.*;
-import com.oet.test.entity.*;
-import com.oet.test.repository.*;
+import com.oet.test.dto.CorrectAnswerResponse;
+import com.oet.test.dto.QuestionGroupRequest;
+import com.oet.test.dto.QuestionGroupResponse;
+import com.oet.test.dto.QuestionOptionResponse;
+import com.oet.test.dto.QuestionResponse;
+import com.oet.test.dto.TestCreateRequest;
+import com.oet.test.dto.TestDetailResponse;
+import com.oet.test.dto.TestPartRequest;
+import com.oet.test.dto.TestPartResponse;
+import com.oet.test.dto.TestSummaryResponse;
+import com.oet.test.dto.TextPassageRequest;
+import com.oet.test.dto.TextPassageResponse;
+import com.oet.test.entity.CorrectAnswer;
+import com.oet.test.entity.OetTest;
+import com.oet.test.entity.Question;
+import com.oet.test.entity.QuestionGroup;
+import com.oet.test.entity.QuestionOption;
+import com.oet.test.entity.TestPart;
+import com.oet.test.entity.TextPassage;
+import com.oet.test.repository.QuestionGroupRepository;
+import com.oet.test.repository.TestPartRepository;
+import com.oet.test.repository.TestRepository;
+import com.oet.test.repository.TextPassageRepository;
 import com.oet.user.entity.User;
 import com.oet.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -331,7 +351,8 @@ public class TestService {
         if (includeAnswers && q.getCorrectAnswer() != null) {
             CorrectAnswer ca = q.getCorrectAnswer();
             Long correctOptionId = ca.getCorrectOption() != null ? ca.getCorrectOption().getId() : null;
-            correctAnswer = new CorrectAnswerResponse(correctOptionId, ca.getCorrectText(), ca.getAlternativeAnswers());
+            Character optionLabel = ca.getCorrectOption() != null ? ca.getCorrectOption().getOptionLabel() : null;
+            correctAnswer = new CorrectAnswerResponse(correctOptionId, optionLabel, ca.getCorrectText(), ca.getAlternativeAnswers());
         }
 
         return new QuestionResponse(q.getId(), q.getQuestionNumber(), q.getQuestionText(),

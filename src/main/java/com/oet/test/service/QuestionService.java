@@ -1,9 +1,19 @@
 package com.oet.test.service;
 
 import com.oet.common.exception.NotFoundException;
-import com.oet.test.dto.*;
-import com.oet.test.entity.*;
-import com.oet.test.repository.*;
+import com.oet.test.dto.CorrectAnswerResponse;
+import com.oet.test.dto.QuestionCreateRequest;
+import com.oet.test.dto.QuestionOptionRequest;
+import com.oet.test.dto.QuestionOptionResponse;
+import com.oet.test.dto.QuestionResponse;
+import com.oet.test.entity.CorrectAnswer;
+import com.oet.test.entity.Question;
+import com.oet.test.entity.QuestionGroup;
+import com.oet.test.entity.QuestionOption;
+import com.oet.test.repository.CorrectAnswerRepository;
+import com.oet.test.repository.QuestionGroupRepository;
+import com.oet.test.repository.QuestionOptionRepository;
+import com.oet.test.repository.QuestionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -125,7 +135,8 @@ public class QuestionService {
         CorrectAnswerResponse caResponse = null;
         if (ca != null) {
             Long correctOptionId = ca.getCorrectOption() != null ? ca.getCorrectOption().getId() : null;
-            caResponse = new CorrectAnswerResponse(correctOptionId, ca.getCorrectText(), ca.getAlternativeAnswers());
+            Character optionLabel = ca.getCorrectOption() != null ? ca.getCorrectOption().getOptionLabel() : null;
+            caResponse = new CorrectAnswerResponse(correctOptionId, optionLabel, ca.getCorrectText(), ca.getAlternativeAnswers());
         }
 
         return new QuestionResponse(q.getId(), q.getQuestionNumber(), q.getQuestionText(),

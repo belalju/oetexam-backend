@@ -1,6 +1,11 @@
 package com.oet.attempt.service;
 
-import com.oet.attempt.dto.*;
+import com.oet.attempt.dto.AttemptAnswerResult;
+import com.oet.attempt.dto.AttemptHistoryResponse;
+import com.oet.attempt.dto.AttemptResultResponse;
+import com.oet.attempt.dto.SaveAnswerRequest;
+import com.oet.attempt.dto.StartAttemptResponse;
+import com.oet.attempt.dto.SubmitAttemptResponse;
 import com.oet.attempt.entity.AttemptAnswer;
 import com.oet.attempt.entity.AttemptStatus;
 import com.oet.attempt.entity.TestAttempt;
@@ -8,8 +13,10 @@ import com.oet.attempt.repository.AttemptAnswerRepository;
 import com.oet.attempt.repository.TestAttemptRepository;
 import com.oet.common.exception.BusinessException;
 import com.oet.common.exception.NotFoundException;
-import com.oet.test.entity.*;
-import com.oet.test.repository.CorrectAnswerRepository;
+import com.oet.test.entity.CorrectAnswer;
+import com.oet.test.entity.OetTest;
+import com.oet.test.entity.Question;
+import com.oet.test.entity.QuestionOption;
 import com.oet.test.repository.QuestionOptionRepository;
 import com.oet.test.repository.QuestionRepository;
 import com.oet.test.repository.TestRepository;
@@ -37,7 +44,6 @@ public class AttemptService {
     private final TestRepository testRepository;
     private final QuestionRepository questionRepository;
     private final QuestionOptionRepository questionOptionRepository;
-    private final CorrectAnswerRepository correctAnswerRepository;
     private final UserRepository userRepository;
     private final GradingService gradingService;
     private final TestService testService;
@@ -250,6 +256,7 @@ public class AttemptService {
 
         Long selectedOptionId = answer.getSelectedOption() != null ? answer.getSelectedOption().getId() : null;
         Long correctOptionId = ca != null && ca.getCorrectOption() != null ? ca.getCorrectOption().getId() : null;
+        Character optionLabel = ca != null && ca.getCorrectOption() != null ? ca.getCorrectOption().getOptionLabel() : null;
         String correctText = ca != null ? ca.getCorrectText() : null;
 
         return new AttemptAnswerResult(
@@ -259,6 +266,7 @@ public class AttemptService {
                 selectedOptionId,
                 answer.getAnswerText(),
                 correctOptionId,
+                optionLabel,
                 correctText,
                 Boolean.TRUE.equals(answer.getCorrect())
         );
