@@ -1,6 +1,7 @@
 package com.oet.media.service;
 
 import com.oet.common.exception.BusinessException;
+import com.oet.common.exception.NotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -68,9 +69,9 @@ public class MediaStorageService {
             if (resource.exists() && resource.isReadable()) {
                 return resource;
             }
-            throw new BusinessException("Audio file not found: " + filename);
+            throw new NotFoundException("Audio file not found: " + filename);
         } catch (MalformedURLException e) {
-            throw new BusinessException("Could not load audio file: " + filename);
+            throw new NotFoundException("Could not load audio file: " + filename);
         }
     }
 
