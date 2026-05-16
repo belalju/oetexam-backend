@@ -24,7 +24,7 @@ import java.util.UUID;
 public class MediaStorageService {
 
     private static final Set<String> ALLOWED_TYPES = Set.of("audio/mpeg", "audio/wav", "audio/mp3", "audio/x-wav");
-    private static final long MAX_FILE_SIZE = 50L * 1024 * 1024; // 50 MB
+    private static final long MAX_FILE_SIZE = 100L * 1024 * 1024; // 50 MB
 
     private final Path audioDir;
 
