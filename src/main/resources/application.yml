@@ -21,8 +21,12 @@ spring:
     locations: classpath:db/migration
   servlet:
     multipart:
-      max-file-size: 50MB
-      max-request-size: 50MB
+      max-file-size: 75MB
+      max-request-size: 75MB
+
+server:
+  tomcat:
+    max-http-form-post-size: 75MB
 
 app:
   jwt:
