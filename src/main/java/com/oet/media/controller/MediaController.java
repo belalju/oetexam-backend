@@ -28,12 +28,12 @@ public class MediaController {
 
     private final MediaStorageService mediaStorageService;
 
-    @PostMapping("/upload")
+    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Map<String, String>>> uploadAudio(
             @RequestParam("file") MultipartFile file) {
         String filename = mediaStorageService.storeAudioFile(file);
-        String url = "/api/admin/media/" + filename;
+        String url = "/api/media/" + filename;
         return ResponseEntity.ok(ApiResponse.success(Map.of("filename", filename, "url", url)));
     }
 
