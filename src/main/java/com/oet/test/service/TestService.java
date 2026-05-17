@@ -2,6 +2,7 @@ package com.oet.test.service;
 
 import com.oet.common.exception.BusinessException;
 import com.oet.common.exception.NotFoundException;
+import com.oet.media.service.MediaStorageService;
 import com.oet.test.dto.CorrectAnswerResponse;
 import com.oet.test.dto.QuestionGroupRequest;
 import com.oet.test.dto.QuestionGroupResponse;
@@ -18,7 +19,6 @@ import com.oet.test.entity.CorrectAnswer;
 import com.oet.test.entity.OetTest;
 import com.oet.test.entity.Question;
 import com.oet.test.entity.QuestionGroup;
-import com.oet.test.entity.QuestionOption;
 import com.oet.test.entity.TestPart;
 import com.oet.test.entity.TextPassage;
 import com.oet.test.repository.QuestionGroupRepository;
@@ -33,6 +33,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -46,6 +47,7 @@ public class TestService {
     private final TextPassageRepository textPassageRepository;
     private final QuestionGroupRepository questionGroupRepository;
     private final UserRepository userRepository;
+    private final MediaStorageService mediaStorageService;
 
     // ── Admin operations ────────────────────────────────────────────────
 
@@ -157,13 +159,14 @@ public class TestService {
     // ── Passages ─────────────────────────────────────────────────────────
 
     @Transactional
-    public TextPassageResponse addPassage(Long partId, TextPassageRequest request) {
+    public TextPassageResponse addPassage(Long partId, TextPassageRequest request, MultipartFile audioFile) {
         TestPart part = findPartById(partId);
+        String audioFileUrl = resolveAudioUrl(audioFile, null);
         TextPassage passage = TextPassage.builder()
                 .testPart(part)
                 .label(request.label())
                 .content(request.content())
-                .audioFileUrl(request.audioFileUrl())
+                .audioFileUrl(audioFileUrl)
                 .audioDurationSeconds(request.audioDurationSeconds())
                 .sortOrder(request.sortOrder() != null ? request.sortOrder() : 0)
                 .build();
@@ -171,15 +174,26 @@ public class TestService {
     }
 
     @Transactional
-    public TextPassageResponse updatePassage(Long passageId, TextPassageRequest request) {
+    public TextPassageResponse updatePassage(Long passageId, TextPassageRequest request, MultipartFile audioFile) {
         TextPassage passage = textPassageRepository.findById(passageId)
                 .orElseThrow(() -> new NotFoundException("Passage not found: " + passageId));
+        String audioFileUrl = resolveAudioUrl(audioFile, passage.getAudioFileUrl());
         passage.setLabel(request.label());
         passage.setContent(request.content());
-        passage.setAudioFileUrl(request.audioFileUrl());
+        passage.setAudioFileUrl(audioFileUrl);
         passage.setAudioDurationSeconds(request.audioDurationSeconds());
         if (request.sortOrder() != null) passage.setSortOrder(request.sortOrder());
         return toPassageResponse(passage);
+    }
+
+    private String resolveAudioUrl(MultipartFile audioFile, String existingUrl) {
+        if (audioFile == null || audioFile.isEmpty()) {
+            return existingUrl;
+        }
+        if (existingUrl != null) {
+            mediaStorageService.deleteAudioFile(existingUrl);
+        }
+        return mediaStorageService.storeAudioFile(audioFile);
     }
 
     @Transactional
