@@ -94,7 +94,7 @@ public class QuestionService {
 
         List<QuestionOption> currentOptions;
         if (request.options() != null) {
-            questionOptionRepository.deleteAll(question.getOptions());
+            questionOptionRepository.deleteAllByQuestionId(questionId);
             currentOptions = new ArrayList<>();
             for (QuestionOptionRequest optReq : request.options()) {
                 QuestionOption option = QuestionOption.builder()
