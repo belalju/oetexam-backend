@@ -4,6 +4,8 @@ public record AttemptAnswerResult(
         Long questionId,
         Integer questionNumber,
         String questionText,
+        String prefixText,
+        String suffixText,
         Long selectedOptionId,
         Character selectedOptionLabel,
         String answerText,

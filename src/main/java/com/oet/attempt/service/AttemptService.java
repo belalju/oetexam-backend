@@ -264,6 +264,8 @@ public class AttemptService {
                 q.getId(),
                 q.getQuestionNumber(),
                 q.getQuestionText(),
+                q.getPrefixText(),
+                q.getSuffixText(),
                 selectedOptionId,
                 selectedOptionLabel,
                 answer.getAnswerText(),
