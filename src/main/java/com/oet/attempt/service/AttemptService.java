@@ -181,9 +181,7 @@ public class AttemptService {
                 attempt.getStatus(),
                 attempt.getTotalScore(),
                 attempt.getMaxScore(),
-                attempt.getTotalScore() != null && attempt.getMaxScore() != null && attempt.getMaxScore() > 0
-                        ? Math.round(attempt.getTotalScore() * 100.0 / attempt.getMaxScore() * 10) / 10.0
-                        : 0.0,
+                attempt.getGrade(),
                 timeSpent,
                 attempt.getStartedAt(),
                 attempt.getCompletedAt(),
@@ -204,8 +202,8 @@ public class AttemptService {
         List<Question> questions = questionRepository.findAllByTestIdWithCorrectAnswers(attempt.getTest().getId());
         List<AttemptAnswer> answers = answerRepository.findByAttemptIdWithDetails(attempt.getId());
 
-        int totalScore = 0;
-        int maxScore = questions.size();
+        int correctCount = 0;
+        int maxScore = (int) Math.round(questions.size() * 11.9 / 10.0) * 10;
 
         for (AttemptAnswer answer : answers) {
             Question question = questions.stream()
@@ -216,38 +214,50 @@ public class AttemptService {
             if (question != null) {
                 boolean correct = gradingService.grade(answer, question);
                 answer.setCorrect(correct);
-                if (correct) totalScore++;
+                if (correct) correctCount++;
             }
         }
+
+        double rawScore = correctCount * 11.9;
+        int totalScore = (int) Math.round(rawScore / 10.0) * 10;
 
         answerRepository.saveAll(answers);
 
         LocalDateTime completedAt = LocalDateTime.now();
         int timeSpent = (int) ChronoUnit.SECONDS.between(attempt.getStartedAt(), completedAt);
-        double percentage = maxScore > 0 ? Math.round(totalScore * 100.0 / maxScore * 10) / 10.0 : 0.0;
+        String grade = calculateGrade(totalScore);
 
         attempt.setStatus(finalStatus);
         attempt.setCompletedAt(completedAt);
         attempt.setTotalScore(totalScore);
         attempt.setMaxScore(maxScore);
         attempt.setTimeSpentSeconds(timeSpent);
+        attempt.setGrade(grade);
         attemptRepository.save(attempt);
 
         log.info("Attempt {} completed: score={}/{}, status={}", attempt.getId(), totalScore, maxScore, finalStatus);
 
         return new SubmitAttemptResponse(
-                attempt.getId(), finalStatus, totalScore, maxScore, percentage, timeSpent, completedAt
+                attempt.getId(), finalStatus, totalScore, maxScore, grade, timeSpent, completedAt
         );
     }
 
     private SubmitAttemptResponse buildSubmitResponse(TestAttempt attempt) {
-        double percentage = attempt.getTotalScore() != null && attempt.getMaxScore() != null && attempt.getMaxScore() > 0
-                ? Math.round(attempt.getTotalScore() * 100.0 / attempt.getMaxScore() * 10) / 10.0
-                : 0.0;
         return new SubmitAttemptResponse(
                 attempt.getId(), attempt.getStatus(), attempt.getTotalScore(),
-                attempt.getMaxScore(), percentage, attempt.getTimeSpentSeconds(), attempt.getCompletedAt()
+                attempt.getMaxScore(), attempt.getGrade(),
+                attempt.getTimeSpentSeconds(), attempt.getCompletedAt()
         );
+    }
+
+    private String calculateGrade(Integer score) {
+        if (score == null) return null;
+        if (score >= 450) return "A";
+        if (score >= 350) return "B";
+        if (score >= 300) return "C+";
+        if (score >= 200) return "C";
+        if (score >= 100) return "D";
+        return "E";
     }
 
     private AttemptAnswerResult toAnswerResult(AttemptAnswer answer) {
@@ -285,9 +295,7 @@ public class AttemptService {
                 attempt.getStatus(),
                 attempt.getTotalScore(),
                 attempt.getMaxScore(),
-                attempt.getTotalScore() != null && attempt.getMaxScore() != null && attempt.getMaxScore() > 0
-                        ? Math.round(attempt.getTotalScore() * 100.0 / attempt.getMaxScore() * 10) / 10.0
-                        : null,
+                attempt.getGrade(),
                 attempt.getStartedAt(),
                 attempt.getCompletedAt()
         );

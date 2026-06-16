@@ -11,7 +11,7 @@ public record AttemptResultResponse(
         AttemptStatus status,
         Integer totalScore,
         Integer maxScore,
-        Double percentage,
+        String grade,
         Integer timeSpentSeconds,
         LocalDateTime startedAt,
         LocalDateTime completedAt,

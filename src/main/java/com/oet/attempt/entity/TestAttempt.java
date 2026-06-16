@@ -74,6 +74,9 @@ public class TestAttempt {
     @Column(name = "time_spent_seconds")
     private Integer timeSpentSeconds;
 
+    @Column(name = "grade", length = 2)
+    private String grade;
+
     @Version
     private Integer version;
 

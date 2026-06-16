@@ -13,7 +13,7 @@ public record AttemptHistoryResponse(
         AttemptStatus status,
         Integer totalScore,
         Integer maxScore,
-        Double percentage,
+        String grade,
         LocalDateTime startedAt,
         LocalDateTime completedAt
 ) {}
