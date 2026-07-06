@@ -32,7 +32,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -167,10 +170,13 @@ public class AttemptService {
             throw new BusinessException("Attempt is still in progress");
         }
 
-        List<AttemptAnswer> answers = answerRepository.findByAttemptIdWithDetails(attemptId);
+        List<Question> questions = questionRepository.findAllByTestIdWithCorrectAnswers(attempt.getTest().getId());
+        Map<Long, AttemptAnswer> answersByQuestionId = answerRepository.findByAttemptIdWithDetails(attemptId).stream()
+                .collect(Collectors.toMap(a -> a.getQuestion().getId(), a -> a));
 
-        List<AttemptAnswerResult> answerResults = answers.stream()
-                .map(this::toAnswerResult)
+        List<AttemptAnswerResult> answerResults = questions.stream()
+                .sorted(Comparator.comparing(Question::getQuestionNumber))
+                .map(q -> toAnswerResult(q, answersByQuestionId.get(q.getId())))
                 .toList();
 
         int timeSpent = attempt.getTimeSpentSeconds() != null ? attempt.getTimeSpentSeconds() : 0;
@@ -260,15 +266,16 @@ public class AttemptService {
         return "E";
     }
 
-    private AttemptAnswerResult toAnswerResult(AttemptAnswer answer) {
-        Question q = answer.getQuestion();
+    private AttemptAnswerResult toAnswerResult(Question q, AttemptAnswer answer) {
         CorrectAnswer ca = q.getCorrectAnswer();
 
-        Long selectedOptionId = answer.getSelectedOption() != null ? answer.getSelectedOption().getId() : null;
-        Character selectedOptionLabel = answer.getSelectedOption() != null ? answer.getSelectedOption().getOptionLabel() : null;
+        Long selectedOptionId = answer != null && answer.getSelectedOption() != null ? answer.getSelectedOption().getId() : null;
+        Character selectedOptionLabel = answer != null && answer.getSelectedOption() != null ? answer.getSelectedOption().getOptionLabel() : null;
         Long correctOptionId = ca != null && ca.getCorrectOption() != null ? ca.getCorrectOption().getId() : null;
         Character optionLabel = ca != null && ca.getCorrectOption() != null ? ca.getCorrectOption().getOptionLabel() : null;
         String correctText = ca != null ? ca.getCorrectText() : null;
+        String answerText = answer != null ? answer.getAnswerText() : null;
+        boolean correct = answer != null && Boolean.TRUE.equals(answer.getCorrect());
 
         return new AttemptAnswerResult(
                 q.getId(),
@@ -278,11 +285,11 @@ public class AttemptService {
                 q.getSuffixText(),
                 selectedOptionId,
                 selectedOptionLabel,
-                answer.getAnswerText(),
+                answerText,
                 correctOptionId,
                 optionLabel,
                 correctText,
-                Boolean.TRUE.equals(answer.getCorrect())
+                correct
         );
     }
 
