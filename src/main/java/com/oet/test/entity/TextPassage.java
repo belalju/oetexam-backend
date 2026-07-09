@@ -32,7 +32,7 @@ public class TextPassage {
     @JoinColumn(name = "test_part_id", nullable = false)
     private TestPart testPart;
 
-    @Column(nullable = false, length = 50)
+    @Column(nullable = false, length = 100)
     private String label;
 
     @Column(columnDefinition = "TEXT")
