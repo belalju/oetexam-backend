@@ -5,7 +5,7 @@ import jakarta.validation.constraints.Size;
 
 public record TextPassageRequest(
         @NotBlank(message = "Label is required")
-        @Size(max = 50)
+        @Size(max = 100)
         String label,
 
         String content,
