@@ -19,3 +19,4 @@ app:
 logging:
   level:
     com.oet: DEBUG
+    org.springframework.mail: DEBUG

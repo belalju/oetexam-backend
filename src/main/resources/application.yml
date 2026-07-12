@@ -23,6 +23,14 @@ spring:
     multipart:
       max-file-size: 75MB
       max-request-size: 75MB
+  mail:
+    host: ${SMTP_HOST:smtp.gmail.com}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME:post.englishforlife@gmail.com}
+    password: ${SMTP_PASSWORD:fzfj xarv qpoz oiqp}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
 
 server:
   tomcat:
@@ -38,6 +46,13 @@ app:
     refresh-token-expiration-ms: 604800000
   upload:
     audio-dir: ${AUDIO_UPLOAD_DIR:./uploads/audio/}
+  google:
+    client-id: ${GOOGLE_CLIENT_ID:480399955475-en9hgiaa5cf6bp6oggb86m0ffhnobpcr.apps.googleusercontent.com}
+  mail:
+    from: ${MAIL_FROM:no-reply@oetpractice.com}
+    verification-token-expiration-hours: 24
+  frontend:
+    base-url: ${FRONTEND_BASE_URL:http://localhost:4200}
 
 management:
   endpoints:

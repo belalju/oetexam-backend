@@ -1,0 +1,1 @@
+ALTER TABLE test_parts ADD COLUMN title VARCHAR(255) NULL AFTER test_id;
