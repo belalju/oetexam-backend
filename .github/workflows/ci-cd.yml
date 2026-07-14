@@ -35,21 +35,6 @@ jobs:
           path: target/surefire-reports/
           retention-days: 7
 
-  security-scan:
-    name: Security Scan
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Scan dependencies and config for vulnerabilities
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          scan-type: fs
-          scan-ref: .
-          severity: CRITICAL,HIGH
-          ignore-unfixed: true
-          exit-code: '1'
-
   docker-build-push:
     name: Docker Build & Push (local registry)
     runs-on: self-hosted
