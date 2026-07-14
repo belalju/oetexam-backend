@@ -3,14 +3,16 @@ version: '3.8'
 services:
   app:
     build: .
-    image: oetexam:latest
+    # Local builds default to oetexam:latest; CI deploy sets APP_IMAGE to the local-registry image tag
+    image: ${APP_IMAGE:-oetexam:latest}
     container_name: oetexam-app
     restart: unless-stopped
     ports:
       - "8088:8080"
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      DB_URL: jdbc:mysql://db:3306/oet_practice?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      # MySQL runs on the host machine; host.docker.internal resolves to the host
+      DB_URL: ${DB_URL:-jdbc:mysql://host.docker.internal:3308/oet_practice?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
@@ -19,41 +21,13 @@ services:
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
       AUDIO_UPLOAD_DIR: /app/uploads/audio/
       LOG_DIR: /app/logs
+    extra_hosts:
+      # Makes host.docker.internal work on Linux hosts (no-op on Docker Desktop)
+      - "host.docker.internal:host-gateway"
     volumes:
       - audio_uploads:/app/uploads/audio
       - app_logs:/app/logs
-    depends_on:
-      db:
-        condition: service_healthy
-    networks:
-      - oetexam-net
-
-  db:
-    image: mysql:8.0
-    container_name: oetexam-db
-    restart: unless-stopped
-    ports:
-      - "0.0.0.0:3308:3306"   # bind to localhost only    ^`^t not exposed publicly
-    environment:
-      MYSQL_DATABASE: oet_practice
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
-      MYSQL_USER: ${DB_USERNAME}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
-    volumes:
-      - mysql_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_PASSWORD}"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-    networks:
-      - oetexam-net
 
 volumes:
-  mysql_data:
   audio_uploads:
   app_logs:
-
-networks:
-  oetexam-net:
-    driver: bridge

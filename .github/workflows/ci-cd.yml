@@ -1,0 +1,102 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  # Local registry address, e.g. 192.168.1.10:5000 (set as a repository variable)
+  IMAGE_NAME: ${{ vars.REGISTRY_URL }}/oetexam
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Build and run tests
+        run: mvn -B -ntp verify
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: target/surefire-reports/
+          retention-days: 7
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scan dependencies and config for vulnerabilities
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: '1'
+
+  docker-build-push:
+    name: Docker Build & Push (local registry)
+    runs-on: self-hosted
+    needs: [build-and-test, security-scan]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to local registry
+        if: ${{ vars.REGISTRY_AUTH_ENABLED == 'true' }}
+        run: echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ vars.REGISTRY_URL }} -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin
+
+      - name: Build image
+        run: |
+          docker build \
+            -t ${{ env.IMAGE_NAME }}:latest \
+            -t ${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            .
+
+      - name: Push image to local registry
+        run: |
+          docker push ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker push ${{ env.IMAGE_NAME }}:latest
+
+      - name: Prune old build images
+        run: docker image prune -f
+
+  deploy:
+    name: Deploy
+    runs-on: self-hosted
+    needs: docker-build-push
+    if: vars.DEPLOY_ENABLED == 'true'
+    environment: production
+    steps:
+      - name: Deploy to server over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -e
+            cd ${{ vars.DEPLOY_PATH }}
+            if [ "${{ vars.REGISTRY_AUTH_ENABLED }}" = "true" ]; then
+              echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ vars.REGISTRY_URL }} -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin
+            fi
+            export APP_IMAGE=${{ env.IMAGE_NAME }}:${{ github.sha }}
+            docker compose pull app
+            docker compose up -d
+            docker image prune -f
