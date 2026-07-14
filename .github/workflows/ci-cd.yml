@@ -104,7 +104,6 @@ jobs:
               exit 1
             fi
             echo "${{ secrets.GHCR_PULL_TOKEN }}" | docker login ${{ env.REGISTRY }} -u "${{ github.actor }}" --password-stdin
-            docker network inspect oetexam-net >/dev/null 2>&1 || docker network create oetexam-net
             export APP_IMAGE=${{ env.IMAGE_NAME }}:${{ github.sha }}
             docker compose pull app
             docker compose up -d
