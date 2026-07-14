@@ -2,12 +2,12 @@
 
 The pipeline lives in `.github/workflows/ci-cd.yml` and runs these stages:
 
-| Stage | Runs on | Trigger | What it does |
-|---|---|---|---|
-| Build & Test | GitHub-hosted | every PR and push to `main` | `mvn verify` on JDK 21 (Temurin) with Maven dependency caching; uploads Surefire reports on failure |
-| Security Scan | GitHub-hosted | every PR and push to `main` | Trivy filesystem scan of dependencies and config; fails on fixable CRITICAL/HIGH vulnerabilities |
-| Docker Build & Push | **self-hosted runner (build server)** | push to `main` only | Builds the image on the build server and pushes it to the **local Docker registry**, tagged `latest` and the commit SHA |
-| Deploy | **self-hosted runner** | push to `main`, only when enabled | SSH to the app server, pull the new image from the local registry, `docker compose up -d` |
+| Stage               | Runs on                               | Trigger                           | What it does                                                                                                            |
+|---------------------|---------------------------------------|-----------------------------------|-------------------------------------------------------------------------------------------------------------------------|
+| Build & Test        | GitHub-hosted                         | every PR and push to `main`       | `mvn verify` on JDK 21 (Temurin) with Maven dependency caching; uploads Surefire reports on failure                     |
+| Security Scan       | GitHub-hosted                         | every PR and push to `main`       | Trivy filesystem scan of dependencies and config; fails on fixable CRITICAL/HIGH vulnerabilities                        |
+| Docker Build & Push | **self-hosted runner (build server)** | push to `main` only               | Builds the image on the build server and pushes it to the **local Docker registry**, tagged `latest` and the commit SHA |
+| Deploy              | **self-hosted runner**                | push to `main`, only when enabled | SSH to the app server, pull the new image from the local registry, `docker compose up -d`                               |
 
 Flow: **build image on the local build server → push to local registry → deploy server pulls from the registry and restarts the app**. Nothing is pushed to or pulled from GHCR.
 
@@ -84,22 +84,22 @@ Requirements on the runner machine:
 
 ## 3. Repository variables (Settings → Secrets and variables → Actions → Variables)
 
-| Variable | Value |
-|---|---|
-| `REGISTRY_URL` | Local registry address, e.g. `192.168.1.10:5000` |
-| `REGISTRY_AUTH_ENABLED` | `true` only if the registry uses basic auth; otherwise unset |
-| `DEPLOY_ENABLED` | `true` to enable the deploy job |
-| `DEPLOY_PATH` | Directory on the app server containing `docker-compose.yml` and `.env`, e.g. `/opt/oetexam` |
+| Variable                | Value                                                                                       |
+|-------------------------|---------------------------------------------------------------------------------------------|
+| `REGISTRY_URL`          | Local registry address, e.g. `192.168.1.10:5000`                                            |
+| `REGISTRY_AUTH_ENABLED` | `true` only if the registry uses basic auth; otherwise unset                                |
+| `DEPLOY_ENABLED`        | `true` to enable the deploy job                                                             |
+| `DEPLOY_PATH`           | Directory on the app server containing `docker-compose.yml` and `.env`, e.g. `/opt/oetexam` |
 
 ## 4. Repository secrets (Settings → Secrets and variables → Actions → Secrets)
 
-| Secret | Value |
-|---|---|
-| `DEPLOY_HOST` | App server hostname or IP (reachable from the build server) |
-| `DEPLOY_USER` | SSH user (must be able to run `docker compose`) |
-| `DEPLOY_SSH_KEY` | Private SSH key for that user (contents of the key file, not a path) |
-| `REGISTRY_USERNAME` | Registry basic-auth user — only if `REGISTRY_AUTH_ENABLED=true` |
-| `REGISTRY_PASSWORD` | Registry basic-auth password — only if `REGISTRY_AUTH_ENABLED=true` |
+| Secret              | Value                                                                |
+|---------------------|----------------------------------------------------------------------|
+| `DEPLOY_HOST`       | App server hostname or IP (reachable from the build server)          |
+| `DEPLOY_USER`       | SSH user (must be able to run `docker compose`)                      |
+| `DEPLOY_SSH_KEY`    | Private SSH key for that user (contents of the key file, not a path) |
+| `REGISTRY_USERNAME` | Registry basic-auth user — only if `REGISTRY_AUTH_ENABLED=true`      |
+| `REGISTRY_PASSWORD` | Registry basic-auth password — only if `REGISTRY_AUTH_ENABLED=true`  |
 
 ## 5. App server prerequisites
 

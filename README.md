@@ -166,12 +166,12 @@ Logs rotate daily and are kept for 30 days (max 500 MB total). Rotated files are
 
 ## Environment Variables
 
-| Variable | Required | Description |
-|---|---|---|
-| `DB_USERNAME` | Yes | MySQL username |
-| `DB_PASSWORD` | Yes | MySQL password |
-| `JWT_SECRET` | Yes | JWT signing key (min 64 chars) |
-| `JWT_ACCESS_EXPIRATION_MS` | No | Access token TTL in ms (default: 3600000 = 1h) |
-| `JWT_REFRESH_EXPIRATION_MS` | No | Refresh token TTL in ms (default: 604800000 = 7d) |
+| Variable                    | Required | Description                                       |
+|-----------------------------|----------|---------------------------------------------------|
+| `DB_USERNAME`               | Yes      | MySQL username                                    |
+| `DB_PASSWORD`               | Yes      | MySQL password                                    |
+| `JWT_SECRET`                | Yes      | JWT signing key (min 64 chars)                    |
+| `JWT_ACCESS_EXPIRATION_MS`  | No       | Access token TTL in ms (default: 3600000 = 1h)    |
+| `JWT_REFRESH_EXPIRATION_MS` | No       | Refresh token TTL in ms (default: 604800000 = 7d) |
 
 > The `.env` file must never be committed to version control.
