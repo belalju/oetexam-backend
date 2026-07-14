@@ -88,6 +88,10 @@ jobs:
           script: |
             set -e
             cd ${{ vars.DEPLOY_PATH }}
+            if [ -z "${{ secrets.GHCR_PULL_TOKEN }}" ]; then
+              echo "ERROR: GHCR_PULL_TOKEN secret is not set (repo or 'production' environment secret)" >&2
+              exit 1
+            fi
             echo "${{ secrets.GHCR_PULL_TOKEN }}" | docker login ${{ env.REGISTRY }} -u "${{ github.actor }}" --password-stdin
             export APP_IMAGE=${{ env.IMAGE_NAME }}:${{ github.sha }}
             docker compose pull app
