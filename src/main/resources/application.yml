@@ -3,6 +3,10 @@ spring:
     name: oetexam
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
+  config:
+    # Local dev: values are read from a .env file in the working directory
+    # (copy .env.prod.example to .env). Real env vars still take precedence.
+    import: optional:file:.env[.properties]
   jpa:
     open-in-view: false
     hibernate:
@@ -26,8 +30,8 @@ spring:
   mail:
     host: ${SMTP_HOST:smtp.gmail.com}
     port: ${SMTP_PORT:587}
-    username: ${SMTP_USERNAME:post.englishforlife@gmail.com}
-    password: ${SMTP_PASSWORD:fzfj xarv qpoz oiqp}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
     properties:
       mail.smtp.auth: true
       mail.smtp.starttls.enable: true
