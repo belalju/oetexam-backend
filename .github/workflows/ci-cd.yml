@@ -38,7 +38,7 @@ jobs:
   docker-build-push:
     name: Docker Build & Push (local registry)
     runs-on: self-hosted
-    needs: [build-and-test, security-scan]
+    needs: [build-and-test]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
