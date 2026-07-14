@@ -1,111 +1,63 @@
-# CI/CD Setup (GitHub Actions + self-hosted runner + local registry)
+# CI/CD Setup (GitHub Actions + GHCR)
 
-The pipeline lives in `.github/workflows/ci-cd.yml` and runs these stages:
+The pipeline lives in `.github/workflows/ci-cd.yml`. Everything runs on
+**GitHub-hosted runners** — no self-hosted runner or local registry is needed.
 
-| Stage               | Runs on                               | Trigger                           | What it does                                                                                                            |
-|---------------------|---------------------------------------|-----------------------------------|-------------------------------------------------------------------------------------------------------------------------|
-| Build & Test        | GitHub-hosted                         | every PR and push to `main`       | `mvn verify` on JDK 21 (Temurin) with Maven dependency caching; uploads Surefire reports on failure                     |
-| Security Scan       | GitHub-hosted                         | every PR and push to `main`       | Trivy filesystem scan of dependencies and config; fails on fixable CRITICAL/HIGH vulnerabilities                        |
-| Docker Build & Push | **self-hosted runner (build server)** | push to `main` only               | Builds the image on the build server and pushes it to the **local Docker registry**, tagged `latest` and the commit SHA |
-| Deploy              | **self-hosted runner**                | push to `main`, only when enabled | SSH to the app server, pull the new image from the local registry, `docker compose up -d`                               |
+| Stage               | Runs on       | Trigger                           | What it does                                                                                                    |
+|---------------------|---------------|-----------------------------------|------------------------------------------------------------------------------------------------------------------|
+| Build & Test        | GitHub-hosted | every PR and push to `main`       | `mvn verify` on JDK 21 (Temurin) with Maven dependency caching; uploads Surefire reports on failure               |
+| Docker Build & Push | GitHub-hosted | push to `main` only               | Builds the image with Buildx (GitHub Actions layer cache) and pushes it to **GHCR**, tagged `latest` and the SHA |
+| Deploy              | GitHub-hosted | push to `main`, only when enabled | SSH to the app server, `docker login` to GHCR, pull the new image, `docker compose up -d`                        |
 
-Flow: **build image on the local build server → push to local registry → deploy server pulls from the registry and restarts the app**. Nothing is pushed to or pulled from GHCR.
+Flow: **build image on GitHub's runner → push to `ghcr.io/<owner>/<repo>` →
+deploy server pulls from GHCR and restarts the app**.
 
-## 1. Local Docker registry (one-time, on the build server or any always-on host)
+The image name is derived from the repository and lowercased in the workflow
+(GHCR requires lowercase), e.g. `ghcr.io/<owner>/oetexam`.
 
-```bash
-docker run -d \
-  --name registry \
-  --restart=always \
-  -p 5000:5000 \
-  -v /opt/registry/data:/var/lib/registry \
-  registry:2
-```
+## 1. GHCR authentication
 
-The registry address (e.g. `192.168.1.10:5000`) must be reachable from **both** the build server and the deploy server.
+- **Pushing (CI):** nothing to configure. The workflow uses the built-in
+  `GITHUB_TOKEN` with `packages: write` permission.
+- **Pulling (app server):** the deploy step logs the app server in to GHCR with
+  the `GHCR_PULL_TOKEN` secret. Create a **classic personal access token**
+  (github.com → Settings → Developer settings → Personal access tokens →
+  Tokens (classic)) with the **`read:packages`** scope and store it as a
+  repository secret (see section 3). The workflow fails fast with a clear
+  error if this secret is missing.
 
-### Plain-HTTP registry: mark it as insecure
+The first push creates the GHCR package as **private**. Keep it private; the
+pull token grants the app server access. (If the token owner isn't the package
+owner, grant them read access under the package's settings.)
 
-Docker refuses HTTP registries by default. On **every machine that pushes or pulls**
-(build server *and* deploy server), add the registry to `/etc/docker/daemon.json`:
+## 2. Repository variables (Settings → Secrets and variables → Actions → Variables)
 
-```json
-{
-  "insecure-registries": ["192.168.1.10:5000"]
-}
-```
+| Variable         | Value                                                                                        |
+|------------------|-----------------------------------------------------------------------------------------------|
+| `DEPLOY_ENABLED` | `true` to enable the deploy job                                                               |
+| `DEPLOY_PATH`    | Directory on the app server containing `docker-compose.yml` and `.env`, e.g. `/opt/oetexam`  |
 
-then `sudo systemctl restart docker`. Skip this if you put TLS in front of the
-registry (recommended if it's reachable beyond a trusted network).
+## 3. Repository secrets (Settings → Secrets and variables → Actions → Secrets)
 
-### (Optional) Basic auth
+| Secret            | Value                                                                     |
+|-------------------|----------------------------------------------------------------------------|
+| `DEPLOY_HOST`     | App server hostname or IP — must be **reachable from the internet**, since the SSH connection originates from GitHub's runners |
+| `DEPLOY_USER`     | SSH user (must be able to run `docker compose`)                            |
+| `DEPLOY_SSH_KEY`  | Private SSH key for that user (contents of the key file, not a path)       |
+| `GHCR_PULL_TOKEN` | Classic PAT with `read:packages` scope — used by the app server to pull from GHCR |
 
-If the registry is reachable by anyone other than the two servers, protect it:
+> The deploy job targets the `production` GitHub environment, so these can also
+> be defined as environment secrets under Settings → Environments → production.
+> Either location works; just don't put `GHCR_PULL_TOKEN` under a *different*
+> environment.
 
-```bash
-mkdir -p /opt/registry/auth
-docker run --rm --entrypoint htpasswd httpd:2 -Bbn oetci '<strong-password>' > /opt/registry/auth/htpasswd
-
-docker run -d \
-  --name registry \
-  --restart=always \
-  -p 5000:5000 \
-  -v /opt/registry/data:/var/lib/registry \
-  -v /opt/registry/auth:/auth \
-  -e REGISTRY_AUTH=htpasswd \
-  -e REGISTRY_AUTH_HTPASSWD_REALM="Registry" \
-  -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd \
-  registry:2
-```
-
-Then set the repository variable `REGISTRY_AUTH_ENABLED=true` and the
-`REGISTRY_USERNAME` / `REGISTRY_PASSWORD` secrets (see below) — the workflow
-logs in before pushing/pulling.
-
-## 2. Self-hosted GitHub Actions runner (one-time, on the build server)
-
-Repo → Settings → Actions → Runners → **New self-hosted runner**, then follow the
-generated commands on the build server, roughly:
-
-```bash
-mkdir ~/actions-runner && cd ~/actions-runner
-curl -o actions-runner-linux-x64.tar.gz -L https://github.com/actions/runner/releases/latest/download/actions-runner-linux-x64-<version>.tar.gz
-tar xzf actions-runner-linux-x64.tar.gz
-./config.sh --url https://github.com/<owner>/<repo> --token <registration-token>
-sudo ./svc.sh install && sudo ./svc.sh start
-```
-
-Requirements on the runner machine:
-
-- Docker Engine installed, and the runner user in the `docker` group
-  (`sudo usermod -aG docker <runner-user>`).
-- Network access to the local registry and SSH access to the deploy server
-  (the deploy job runs on this runner and SSHes to the app server).
-
-## 3. Repository variables (Settings → Secrets and variables → Actions → Variables)
-
-| Variable                | Value                                                                                       |
-|-------------------------|---------------------------------------------------------------------------------------------|
-| `REGISTRY_URL`          | Local registry address, e.g. `192.168.1.10:5000`                                            |
-| `REGISTRY_AUTH_ENABLED` | `true` only if the registry uses basic auth; otherwise unset                                |
-| `DEPLOY_ENABLED`        | `true` to enable the deploy job                                                             |
-| `DEPLOY_PATH`           | Directory on the app server containing `docker-compose.yml` and `.env`, e.g. `/opt/oetexam` |
-
-## 4. Repository secrets (Settings → Secrets and variables → Actions → Secrets)
-
-| Secret              | Value                                                                |
-|---------------------|----------------------------------------------------------------------|
-| `DEPLOY_HOST`       | App server hostname or IP (reachable from the build server)          |
-| `DEPLOY_USER`       | SSH user (must be able to run `docker compose`)                      |
-| `DEPLOY_SSH_KEY`    | Private SSH key for that user (contents of the key file, not a path) |
-| `REGISTRY_USERNAME` | Registry basic-auth user — only if `REGISTRY_AUTH_ENABLED=true`      |
-| `REGISTRY_PASSWORD` | Registry basic-auth password — only if `REGISTRY_AUTH_ENABLED=true`  |
-
-## 5. App server prerequisites
+## 4. App server prerequisites
 
 - Docker Engine with the Compose plugin installed.
-- The registry listed under `insecure-registries` in `/etc/docker/daemon.json`
-  (see section 1) unless it serves TLS.
+- SSH reachable from the public internet (GitHub-hosted runners have no access
+  to your LAN). If the server must stay private, put a tunnel in front of it
+  (e.g. Tailscale or Cloudflare Tunnel) or move the deploy job back to a
+  self-hosted runner.
 - `DEPLOY_PATH` contains this repo's `docker-compose.yml` and a `.env` file with the
   runtime secrets (`DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `CORS_ALLOWED_ORIGINS`, ...).
 - MySQL 8 installed **on the host machine** (not in Docker). The app container reaches
@@ -141,11 +93,11 @@ Requirements on the runner machine:
 - Set `DB_USERNAME`/`DB_PASSWORD` in `.env` to the MySQL user created above. The JDBC
   URL defaults to `jdbc:mysql://host.docker.internal:3308/oet_practice`; override with
   `DB_URL` in `.env` if your setup differs.
-- The deploy step sets `APP_IMAGE` to the freshly pushed local-registry tag
-  (`<REGISTRY_URL>/oetexam:<commit-sha>`), so the app server never builds the
+- The deploy step sets `APP_IMAGE` to the freshly pushed GHCR tag
+  (`ghcr.io/<owner>/<repo>:<commit-sha>`), so the app server never builds the
   image itself.
 
-## 6. (Optional) Protect the `production` environment
+## 5. (Optional) Protect the `production` environment
 
 The deploy job targets the `production` GitHub environment. Under
 Settings → Environments → production you can add required reviewers to make
@@ -153,17 +105,14 @@ deploys manual-approval only.
 
 ## Rollback
 
-Every push to `main` publishes an immutable SHA tag in the local registry. To
-roll back, SSH to the app server and run:
+Every push to `main` publishes an immutable SHA tag in GHCR. To roll back,
+SSH to the app server and run:
 
 ```bash
 cd /opt/oetexam
-export APP_IMAGE=<REGISTRY_URL>/oetexam:<old-commit-sha>
+echo "<GHCR_PULL_TOKEN>" | docker login ghcr.io -u <github-username> --password-stdin
+export APP_IMAGE=ghcr.io/<owner>/<repo>:<old-commit-sha>
 docker compose pull app && docker compose up -d
 ```
 
-Tags kept in the registry can be listed with:
-
-```bash
-curl http://<REGISTRY_URL>/v2/oetexam/tags/list
-```
+Available tags are listed on GitHub under the repository's **Packages** section.

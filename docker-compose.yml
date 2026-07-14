@@ -7,8 +7,10 @@ services:
     image: ${APP_IMAGE:-oetexam:latest}
     container_name: oetexam-app
     restart: unless-stopped
-    ports:
-      - "8088:8080"
+    # No published ports: the frontend container's nginx reaches this app at
+    # oetexam-app:8080 over the shared oetexam-net docker network
+    networks:
+      - oetexam-net
     environment:
       SPRING_PROFILES_ACTIVE: prod
       # MySQL runs on the host machine; host.docker.internal resolves to the host
@@ -31,3 +33,7 @@ services:
 volumes:
   audio_uploads:
   app_logs:
+
+networks:
+  oetexam-net:
+    external: true
