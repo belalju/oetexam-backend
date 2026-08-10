@@ -110,23 +110,30 @@ public class QuestionService {
         }
 
         CorrectAnswer ca = correctAnswerRepository.findByQuestionId(questionId).orElse(null);
-        if (ca != null) {
-            ca.setCorrectText(request.correctText());
-            if (request.alternativeAnswers() != null) ca.setAlternativeAnswers(request.alternativeAnswers());
-
-            if (request.correctOptionLabel() != null) {
-                final Character label = request.correctOptionLabel();
-                QuestionOption correctOption = currentOptions.stream()
-                        .filter(o -> o.getOptionLabel().equals(label))
-                        .findFirst()
-                        .orElseThrow(() -> new NotFoundException("Correct option not found with label: " + label));
-                ca.setCorrectOption(correctOption);
-            } else if (request.options() != null) {
-                // options replaced but no correctOptionLabel — clear stale reference
-                ca.setCorrectOption(null);
-            }
-            correctAnswerRepository.save(ca);
+        if (ca == null) {
+            ca = CorrectAnswer.builder()
+                    .question(question)
+                    .build();
         }
+        ca.setCorrectText(request.correctText());
+        if (request.alternativeAnswers() != null) {
+            ca.setAlternativeAnswers(request.alternativeAnswers());
+        } else if (ca.getAlternativeAnswers() == null) {
+            ca.setAlternativeAnswers(new ArrayList<>());
+        }
+
+        if (request.correctOptionLabel() != null) {
+            final Character label = request.correctOptionLabel();
+            QuestionOption correctOption = currentOptions.stream()
+                    .filter(o -> o.getOptionLabel().equals(label))
+                    .findFirst()
+                    .orElseThrow(() -> new NotFoundException("Correct option not found with label: " + label));
+            ca.setCorrectOption(correctOption);
+        } else if (request.options() != null) {
+            // options replaced but no correctOptionLabel — clear stale reference
+            ca.setCorrectOption(null);
+        }
+        ca = correctAnswerRepository.save(ca);
 
         return toResponse(question, currentOptions, ca);
     }
