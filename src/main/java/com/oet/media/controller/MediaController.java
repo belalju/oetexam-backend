@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.ResourceRegion;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpRange;
 import org.springframework.http.HttpStatus;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -54,6 +56,8 @@ public class MediaController {
                 ? MediaType.parseMediaType("audio/wav")
                 : MediaType.parseMediaType("audio/mpeg");
         long contentLength = resource.contentLength();
+        // Stored filenames are UUID-based and never overwritten, so they can be cached indefinitely.
+        CacheControl cacheControl = CacheControl.maxAge(Duration.ofDays(365)).cachePublic().immutable();
 
         List<HttpRange> ranges = headers.getRange();
 
@@ -61,6 +65,7 @@ public class MediaController {
             return ResponseEntity.ok()
                     .contentType(contentType)
                     .header(HttpHeaders.ACCEPT_RANGES, "bytes")
+                    .cacheControl(cacheControl)
                     .contentLength(contentLength)
                     .body(resource);
         }
@@ -68,12 +73,13 @@ public class MediaController {
         HttpRange range = ranges.getFirst();
         long start = range.getRangeStart(contentLength);
         long end = range.getRangeEnd(contentLength);
-        long rangeLength = Math.min(1024 * 1024L, end - start + 1);
+        long rangeLength = end - start + 1;
         ResourceRegion region = new ResourceRegion(resource, start, rangeLength);
 
         return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT)
                 .contentType(contentType)
                 .header(HttpHeaders.ACCEPT_RANGES, "bytes")
+                .cacheControl(cacheControl)
                 .body(region);
     }
 
