@@ -11,6 +11,7 @@ public record AttemptAnswerResult(
         String answerText,
         Long correctOptionId,
         Character optionLabel,
+        String optionText,
         String correctText,
         boolean correct
 ) {}

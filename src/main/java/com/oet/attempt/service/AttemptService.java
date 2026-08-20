@@ -273,6 +273,7 @@ public class AttemptService {
         Character selectedOptionLabel = answer != null && answer.getSelectedOption() != null ? answer.getSelectedOption().getOptionLabel() : null;
         Long correctOptionId = ca != null && ca.getCorrectOption() != null ? ca.getCorrectOption().getId() : null;
         Character optionLabel = ca != null && ca.getCorrectOption() != null ? ca.getCorrectOption().getOptionLabel() : null;
+        String optionText = ca != null && ca.getCorrectOption() != null ? ca.getCorrectOption().getOptionText() : null;
         String correctText = ca != null ? ca.getCorrectText() : null;
         String answerText = answer != null ? answer.getAnswerText() : null;
         boolean correct = answer != null && Boolean.TRUE.equals(answer.getCorrect());
@@ -288,6 +289,7 @@ public class AttemptService {
                 answerText,
                 correctOptionId,
                 optionLabel,
+                optionText,
                 correctText,
                 correct
         );
