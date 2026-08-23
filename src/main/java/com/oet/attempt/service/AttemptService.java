@@ -61,15 +61,15 @@ public class AttemptService {
             throw new BusinessException("Test is not published");
         }
 
-        // Check for existing in-progress attempt
-        boolean hasActive = attemptRepository
-                .findByUserIdOrderByStartedAtDesc(user.getId(), Pageable.ofSize(1))
-                .stream()
-                .anyMatch(a -> a.getTest().getId().equals(testId) && a.getStatus() == AttemptStatus.IN_PROGRESS);
-
-        if (hasActive) {
-            throw new BusinessException("You already have an active attempt for this test");
-        }
+//        // Check for existing in-progress attempt
+//        boolean hasActive = attemptRepository
+//                .findByUserIdOrderByStartedAtDesc(user.getId(), Pageable.ofSize(1))
+//                .stream()
+//                .anyMatch(a -> a.getTest().getId().equals(testId) && a.getStatus() == AttemptStatus.IN_PROGRESS);
+//
+//        if (hasActive) {
+//            throw new BusinessException("You already have an active attempt for this test");
+//        }
 
         TestAttempt attempt = TestAttempt.builder()
                 .user(user)

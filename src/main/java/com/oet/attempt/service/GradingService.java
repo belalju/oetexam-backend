@@ -8,7 +8,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -29,7 +32,8 @@ public class GradingService {
         return switch (type) {
             case MCQ_3, MCQ_4 -> gradeMcq(answer, correctAnswer);
             case TEXT_MATCHING -> gradeTextMatching(answer, correctAnswer);
-            case SHORT_ANSWER, GAP_FILL, NOTE_COMPLETION -> gradeTextAnswer(answer, correctAnswer);
+            case GAP_FILL -> gradeGapFill(answer, correctAnswer);
+            case SHORT_ANSWER, NOTE_COMPLETION -> gradeTextAnswer(answer, correctAnswer);
         };
     }
 
@@ -74,6 +78,48 @@ public class GradingService {
         }
 
         return false;
+    }
+
+    /**
+     * Grades GAP_FILL answers leniently: correct if every word of the correct
+     * text (or of any expanded alternative) appears anywhere in the submitted
+     * answer, using whole-word matching. This allows a full-sentence answer
+     * (e.g. "i love apple") to be accepted when the correct answer is just the
+     * key word/phrase (e.g. "apple").
+     */
+    private boolean gradeGapFill(AttemptAnswer answer, CorrectAnswer correctAnswer) {
+        if (answer.getAnswerText() == null || answer.getAnswerText().isBlank()) {
+            return false;
+        }
+
+        Set<String> submittedWords = tokenize(answer.getAnswerText());
+
+        if (correctAnswer.getCorrectText() != null && containsAllWords(submittedWords, correctAnswer.getCorrectText())) {
+            return true;
+        }
+
+        for (String alt : expandAlternatives(correctAnswer.getAlternativeAnswers())) {
+            if (containsAllWords(submittedWords, alt)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean containsAllWords(Set<String> submittedWords, String phrase) {
+        Set<String> phraseWords = tokenize(phrase);
+        return !phraseWords.isEmpty() && submittedWords.containsAll(phraseWords);
+    }
+
+    private Set<String> tokenize(String text) {
+        String normalized = normalize(text);
+        if (normalized.isEmpty()) {
+            return Set.of();
+        }
+        return Arrays.stream(normalized.split("[^a-z0-9]+"))
+                .filter(w -> !w.isBlank())
+                .collect(Collectors.toSet());
     }
 
     /**
