@@ -1,6 +1,6 @@
 # OET Practice Test
 
-Spring Boot 3.x backend for OET (Occupational English Test) practice tests.
+Spring Boot 3 backend for OET (Occupational English Test) practice tests.
 
 ---
 
