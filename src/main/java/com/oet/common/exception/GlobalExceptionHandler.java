@@ -1,6 +1,8 @@
 package com.oet.common.exception;
 
 import com.oet.common.util.ApiResponse;
+import com.oet.payment.exception.PaymentGatewayException;
+import com.oet.payment.exception.PaymentValidationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -35,6 +37,20 @@ public class GlobalExceptionHandler {
         log.warn("Business violation: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ApiResponse.error(HttpStatus.CONFLICT.value(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(PaymentGatewayException.class)
+    public ResponseEntity<ApiResponse<Void>> handlePaymentGateway(PaymentGatewayException ex) {
+        log.error("Payment gateway error: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .body(ApiResponse.error(HttpStatus.BAD_GATEWAY.value(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(PaymentValidationException.class)
+    public ResponseEntity<ApiResponse<Void>> handlePaymentValidation(PaymentValidationException ex) {
+        log.warn("Payment validation failed: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(), ex.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

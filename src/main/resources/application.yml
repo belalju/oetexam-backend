@@ -57,6 +57,18 @@ app:
     verification-token-expiration-hours: 24
   frontend:
     base-url: ${FRONTEND_BASE_URL:http://localhost:4200}
+  payment:
+    sslcommerz:
+      # Sandbox: https://sandbox.sslcommerz.com | Live: https://securepay.sslcommerz.com
+      base-url: ${SSLCOMMERZ_BASE_URL:https://sandbox.sslcommerz.com}
+      store-id: ${SSLCOMMERZ_STORE_ID:}
+      store-password: ${SSLCOMMERZ_STORE_PASSWORD:}
+      success-url: ${SSLCOMMERZ_SUCCESS_URL:${app.frontend.base-url}/payment/success}
+      fail-url: ${SSLCOMMERZ_FAIL_URL:${app.frontend.base-url}/payment/fail}
+      cancel-url: ${SSLCOMMERZ_CANCEL_URL:${app.frontend.base-url}/payment/cancel}
+      ipn-url: ${SSLCOMMERZ_IPN_URL:}
+      connect-timeout: 10s
+      read-timeout: 30s
 
 management:
   endpoints:
