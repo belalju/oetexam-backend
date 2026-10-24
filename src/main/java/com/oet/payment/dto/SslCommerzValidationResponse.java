@@ -11,14 +11,17 @@ import java.math.BigDecimal;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record SslCommerzValidationResponse(
         String status,
+        @JsonProperty("tran_date") String transactionDate,
         @JsonProperty("tran_id") String transactionId,
         @JsonProperty("val_id") String validationId,
         BigDecimal amount,
+        @JsonProperty("store_amount") BigDecimal storeAmount,
         String currency,
         @JsonProperty("currency_type") String currencyType,
         @JsonProperty("currency_amount") BigDecimal currencyAmount,
         @JsonProperty("bank_tran_id") String bankTransactionId,
         @JsonProperty("card_type") String cardType,
+        @JsonProperty("card_brand") String cardBrand,
         @JsonProperty("risk_level") Integer riskLevel,
         @JsonProperty("risk_title") String riskTitle
 ) {

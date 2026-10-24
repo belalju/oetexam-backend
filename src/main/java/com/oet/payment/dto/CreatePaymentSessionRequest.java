@@ -11,6 +11,10 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 
 public record CreatePaymentSessionRequest(
+        @NotBlank(message = "Package is required")
+        @Size(max = 20, message = "Package must not exceed 20 characters")
+        String packageId,
+
         @NotNull(message = "Amount is required")
         @DecimalMin(value = "10.00", message = "Amount must be at least 10.00")
         @DecimalMax(value = "500000.00", message = "Amount must not exceed 500000.00")
@@ -19,14 +23,6 @@ public record CreatePaymentSessionRequest(
 
         @Pattern(regexp = "^[A-Z]{3}$", message = "Currency must be a 3-letter ISO code")
         String currency,
-
-        @NotBlank(message = "Product name is required")
-        @Size(max = 255, message = "Product name must not exceed 255 characters")
-        String productName,
-
-        @NotBlank(message = "Product category is required")
-        @Size(max = 100, message = "Product category must not exceed 100 characters")
-        String productCategory,
 
         @NotBlank(message = "Customer name is required")
         @Size(max = 50, message = "Customer name must not exceed 50 characters")

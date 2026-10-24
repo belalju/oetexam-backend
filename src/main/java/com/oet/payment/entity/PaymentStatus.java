@@ -10,6 +10,10 @@ public enum PaymentStatus {
     EXPIRED,
     UNATTEMPTED;
 
+    public boolean isPaid() {
+        return this == VALID || this == ON_HOLD;
+    }
+
     public boolean isFinal() {
         return this != PENDING;
     }

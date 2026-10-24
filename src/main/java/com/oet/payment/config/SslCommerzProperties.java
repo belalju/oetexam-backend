@@ -16,6 +16,8 @@ public record SslCommerzProperties(
         @NotBlank String successUrl,
         @NotBlank String failUrl,
         @NotBlank String cancelUrl,
+        /** Frontend base path the success/fail/cancel callbacks redirect the browser to. */
+        @NotBlank String resultPageUrl,
         String ipnUrl,
         @NotNull Duration connectTimeout,
         @NotNull Duration readTimeout

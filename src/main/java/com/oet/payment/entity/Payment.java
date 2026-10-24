@@ -45,6 +45,10 @@ public class Payment {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "package_code", length = 20)
+    private PricingPackage pricingPackage;
+
     @Column(name = "transaction_id", nullable = false, unique = true, length = 30)
     private String transactionId;
 

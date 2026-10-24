@@ -57,16 +57,20 @@ app:
     verification-token-expiration-hours: 24
   frontend:
     base-url: ${FRONTEND_BASE_URL:http://localhost:4200}
+  backend:
+    base-url: ${BACKEND_BASE_URL:http://localhost:8080}
   payment:
     sslcommerz:
       # Sandbox: https://sandbox.sslcommerz.com | Live: https://securepay.sslcommerz.com
       base-url: ${SSLCOMMERZ_BASE_URL:https://sandbox.sslcommerz.com}
-      store-id: ${SSLCOMMERZ_STORE_ID:}
-      store-password: ${SSLCOMMERZ_STORE_PASSWORD:}
-      success-url: ${SSLCOMMERZ_SUCCESS_URL:${app.frontend.base-url}/payment/success}
-      fail-url: ${SSLCOMMERZ_FAIL_URL:${app.frontend.base-url}/payment/fail}
-      cancel-url: ${SSLCOMMERZ_CANCEL_URL:${app.frontend.base-url}/payment/cancel}
-      ipn-url: ${SSLCOMMERZ_IPN_URL:}
+      store-id: ${SSLCOMMERZ_STORE_ID:deenc6abe156d48922}
+      store-password: ${SSLCOMMERZ_STORE_PASSWORD:deenc6abe156d48922@ssl}
+      # SSLCommerz form-POSTs the customer's browser here; the backend then redirects to result-page-url.
+      success-url: ${SSLCOMMERZ_SUCCESS_URL:${app.backend.base-url}/api/payments/callback/success}
+      fail-url: ${SSLCOMMERZ_FAIL_URL:${app.backend.base-url}/api/payments/callback/fail}
+      cancel-url: ${SSLCOMMERZ_CANCEL_URL:${app.backend.base-url}/api/payments/callback/cancel}
+      result-page-url: ${SSLCOMMERZ_RESULT_PAGE_URL:${app.frontend.base-url}/payment}
+      ipn-url: ${SSLCOMMERZ_IPN_URL:https://sandbox-gw.sslcommerz.com/ipn}
       connect-timeout: 10s
       read-timeout: 30s
 

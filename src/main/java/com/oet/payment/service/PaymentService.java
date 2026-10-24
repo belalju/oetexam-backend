@@ -10,7 +10,9 @@ import com.oet.payment.dto.SslCommerzSessionQueryResponse;
 import com.oet.payment.dto.SslCommerzSessionResponse;
 import com.oet.payment.entity.Payment;
 import com.oet.payment.entity.PaymentStatus;
+import com.oet.payment.entity.PricingPackage;
 import com.oet.payment.exception.PaymentGatewayException;
+import com.oet.payment.exception.PaymentValidationException;
 import com.oet.payment.repository.PaymentRepository;
 import com.oet.user.entity.User;
 import com.oet.user.repository.UserRepository;
@@ -22,7 +24,6 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 
-import java.math.RoundingMode;
 import java.util.UUID;
 
 @Slf4j
@@ -30,7 +31,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class PaymentService {
 
-    private static final String DEFAULT_CURRENCY = "BDT";
     private static final String TRANSACTION_ID_PREFIX = "OET";
 
     private final SslCommerzClient sslCommerzClient;
@@ -40,12 +40,13 @@ public class PaymentService {
 
     // Not transactional: the gateway call must not hold a DB transaction open.
     public PaymentSessionResponse createSession(CreatePaymentSessionRequest request, String customerEmail) {
-        Payment payment = paymentRepository.save(newPendingPayment(request, customerEmail));
+        PricingPackage pricingPackage = resolvePackage(request);
+        Payment payment = paymentRepository.save(newPendingPayment(pricingPackage, customerEmail));
         String transactionId = payment.getTransactionId();
 
         SslCommerzSessionResponse response;
         try {
-            response = sslCommerzClient.createSession(buildSessionParams(request, payment, customerEmail));
+            response = sslCommerzClient.createSession(buildSessionParams(request, pricingPackage, payment, customerEmail));
         } catch (PaymentGatewayException ex) {
             markFailed(payment);
             throw ex;
@@ -80,14 +81,28 @@ public class PaymentService {
         return toDetailsResponse(response);
     }
 
-    private Payment newPendingPayment(CreatePaymentSessionRequest request, String customerEmail) {
+    // The client's amount is only echoed back for comparison; the charge always uses the server price.
+    private PricingPackage resolvePackage(CreatePaymentSessionRequest request) {
+        PricingPackage pricingPackage = PricingPackage.fromCode(request.packageId())
+                .orElseThrow(() -> new NotFoundException("Package not found: " + request.packageId()));
+        String currency = StringUtils.hasText(request.currency()) ? request.currency() : pricingPackage.getCurrency();
+        if (!pricingPackage.matches(request.amount(), currency)) {
+            log.warn("Checkout price mismatch for package={}: amount={} {}",
+                    pricingPackage.getCode(), request.amount(), currency);
+            throw new PaymentValidationException("Package price has changed. Please refresh and try again.");
+        }
+        return pricingPackage;
+    }
+
+    private Payment newPendingPayment(PricingPackage pricingPackage, String customerEmail) {
         User user = userRepository.findByEmail(customerEmail)
                 .orElseThrow(() -> new NotFoundException("User not found: " + customerEmail));
         return Payment.builder()
                 .user(user)
+                .pricingPackage(pricingPackage)
                 .transactionId(generateTransactionId())
-                .amount(request.amount().setScale(2, RoundingMode.HALF_UP))
-                .currency(StringUtils.hasText(request.currency()) ? request.currency() : DEFAULT_CURRENCY)
+                .amount(pricingPackage.getPrice())
+                .currency(pricingPackage.getCurrency())
                 .status(PaymentStatus.PENDING)
                 .build();
     }
@@ -98,6 +113,7 @@ public class PaymentService {
     }
 
     private MultiValueMap<String, String> buildSessionParams(CreatePaymentSessionRequest request,
+                                                             PricingPackage pricingPackage,
                                                              Payment payment,
                                                              String customerEmail) {
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
@@ -118,8 +134,8 @@ public class PaymentService {
         params.add("cus_country", request.customerCountry());
         params.add("cus_phone", request.customerPhone());
         params.add("shipping_method", "NO");
-        params.add("product_name", request.productName());
-        params.add("product_category", request.productCategory());
+        params.add("product_name", pricingPackage.getDisplayName());
+        params.add("product_category", PricingPackage.PRODUCT_CATEGORY);
         params.add("product_profile", "non-physical-goods");
         params.add("value_a", customerEmail);
         return params;
