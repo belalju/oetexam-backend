@@ -21,6 +21,7 @@ import com.oet.test.entity.Question;
 import com.oet.test.entity.QuestionGroup;
 import com.oet.test.entity.TestPart;
 import com.oet.test.entity.TextPassage;
+import com.oet.test.enums.SubTestType;
 import com.oet.test.repository.QuestionGroupRepository;
 import com.oet.test.repository.TestPartRepository;
 import com.oet.test.repository.TestRepository;
@@ -280,8 +281,11 @@ public class TestService {
     // ── Applicant operations ──────────────────────────────────────────────
 
     @Transactional(readOnly = true)
-    public Page<TestSummaryResponse> listPublishedTests(Pageable pageable) {
-        return testRepository.findAllByPublishedTrue(pageable).map(this::toSummary);
+    public Page<TestSummaryResponse> listPublishedTests(SubTestType subTestType, Pageable pageable) {
+        Page<OetTest> tests = subTestType == null
+                ? testRepository.findAllByPublishedTrue(pageable)
+                : testRepository.findAllByPublishedTrueAndSubTestType(subTestType, pageable);
+        return tests.map(this::toSummary);
     }
 
     @Transactional(readOnly = true)
