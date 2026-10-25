@@ -1,6 +1,7 @@
 package com.oet.test.repository;
 
 import com.oet.test.entity.OetTest;
+import com.oet.test.enums.SubTestType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,6 +13,8 @@ import java.util.Optional;
 public interface TestRepository extends JpaRepository<OetTest, Long> {
 
     Page<OetTest> findAllByPublishedTrue(Pageable pageable);
+
+    Page<OetTest> findAllByPublishedTrueAndSubTestType(SubTestType subTestType, Pageable pageable);
 
     @Query("SELECT DISTINCT t FROM OetTest t LEFT JOIN FETCH t.parts WHERE t.id = :id")
     Optional<OetTest> findWithFullDetailById(@Param("id") Long id);
