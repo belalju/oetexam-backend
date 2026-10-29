@@ -61,23 +61,31 @@ public class GradingService {
         }
 
         String submitted = normalize(answer.getAnswerText());
+        Set<String> submittedWords = tokenize(answer.getAnswerText());
 
         // Check against primary correct text
-        if (correctAnswer.getCorrectText() != null) {
-            if (submitted.equals(normalize(correctAnswer.getCorrectText()))) {
-                return true;
-            }
+        if (correctAnswer.getCorrectText() != null
+                && matchesTextAnswer(submitted, submittedWords, correctAnswer.getCorrectText())) {
+            return true;
         }
 
         // Check against all expanded alternatives
         List<String> alternatives = expandAlternatives(correctAnswer.getAlternativeAnswers());
         for (String alt : alternatives) {
-            if (submitted.equals(normalize(alt))) {
+            if (matchesTextAnswer(submitted, submittedWords, alt)) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    /**
+     * Correct if the submitted answer equals the expected one after normalization,
+     * or contains every word of it (punctuation ignored), e.g. "94 or higher" matches "94%".
+     */
+    private boolean matchesTextAnswer(String submitted, Set<String> submittedWords, String expected) {
+        return submitted.equals(normalize(expected)) || containsAllWords(submittedWords, expected);
     }
 
     /**
