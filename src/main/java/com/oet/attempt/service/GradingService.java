@@ -17,6 +17,9 @@ import java.util.stream.Collectors;
 @Service
 public class GradingService {
 
+    private static final Set<String> FILLER_WORDS = Set.of(
+            "a", "an", "the", "and", "or", "of", "to", "in", "on", "at", "for", "with", "is", "are");
+
     /**
      * Grades a single answer against the correct answer.
      * Returns true if the answer is correct.
@@ -32,8 +35,7 @@ public class GradingService {
         return switch (type) {
             case MCQ_3, MCQ_4 -> gradeMcq(answer, correctAnswer);
             case TEXT_MATCHING -> gradeTextMatching(answer, correctAnswer);
-            case GAP_FILL -> gradeGapFill(answer, correctAnswer);
-            case SHORT_ANSWER, NOTE_COMPLETION -> gradeTextAnswer(answer, correctAnswer);
+            case SHORT_ANSWER, GAP_FILL, NOTE_COMPLETION -> gradeTextAnswer(answer, correctAnswer);
         };
     }
 
@@ -82,37 +84,32 @@ public class GradingService {
 
     /**
      * Correct if the submitted answer equals the expected one after normalization,
-     * or contains every word of it (punctuation ignored), e.g. "94 or higher" matches "94%".
+     * contains every word of it (punctuation ignored), e.g. "94 or higher" matches "94%",
+     * or is a shortened form of it (see {@link #isMainPartOf}).
      */
     private boolean matchesTextAnswer(String submitted, Set<String> submittedWords, String expected) {
-        return submitted.equals(normalize(expected)) || containsAllWords(submittedWords, expected);
+        return submitted.equals(normalize(expected))
+                || containsAllWords(submittedWords, expected)
+                || isMainPartOf(submittedWords, expected);
     }
 
     /**
-     * Grades GAP_FILL answers leniently: correct if every word of the correct
-     * text (or of any expanded alternative) appears anywhere in the submitted
-     * answer, using whole-word matching. This allows a full-sentence answer
-     * (e.g. "i love apple") to be accepted when the correct answer is just the
-     * key word/phrase (e.g. "apple").
+     * Correct if the submitted answer is a shortened form of the expected one: all of its
+     * meaningful words appear in the expected answer and cover more than half of them,
+     * e.g. "30-60 minutes" matches "every 30-60 minutes" but "minutes" alone does not.
      */
-    private boolean gradeGapFill(AttemptAnswer answer, CorrectAnswer correctAnswer) {
-        if (answer.getAnswerText() == null || answer.getAnswerText().isBlank()) {
-            return false;
-        }
+    private boolean isMainPartOf(Set<String> submittedWords, String expected) {
+        Set<String> meaningfulSubmitted = withoutFillerWords(submittedWords);
+        Set<String> meaningfulExpected = withoutFillerWords(tokenize(expected));
+        return !meaningfulSubmitted.isEmpty()
+                && meaningfulExpected.containsAll(meaningfulSubmitted)
+                && meaningfulSubmitted.size() * 2 > meaningfulExpected.size();
+    }
 
-        Set<String> submittedWords = tokenize(answer.getAnswerText());
-
-        if (correctAnswer.getCorrectText() != null && containsAllWords(submittedWords, correctAnswer.getCorrectText())) {
-            return true;
-        }
-
-        for (String alt : expandAlternatives(correctAnswer.getAlternativeAnswers())) {
-            if (containsAllWords(submittedWords, alt)) {
-                return true;
-            }
-        }
-
-        return false;
+    private Set<String> withoutFillerWords(Set<String> words) {
+        return words.stream()
+                .filter(word -> !FILLER_WORDS.contains(word))
+                .collect(Collectors.toSet());
     }
 
     private boolean containsAllWords(Set<String> submittedWords, String phrase) {
