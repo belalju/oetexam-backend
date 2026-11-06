@@ -80,20 +80,22 @@ class GradingServiceTest {
     }
 
     @Test
-    void shortAnswer_exactMatchBehaviorUnchanged() {
+    void shortAnswer_acceptsAnswerEmbeddedInSentenceButRejectsWrongWord() {
         CorrectAnswer correctAnswer = CorrectAnswer.builder().correctText("apple").build();
         Question question = questionOf(QuestionType.SHORT_ANSWER, correctAnswer);
 
-        assertThat(gradingService.grade(answerOf("i love apple"), question)).isFalse();
         assertThat(gradingService.grade(answerOf("apple"), question)).isTrue();
+        assertThat(gradingService.grade(answerOf("i love apple"), question)).isTrue();
+        assertThat(gradingService.grade(answerOf("banana"), question)).isFalse();
     }
 
     @Test
-    void noteCompletion_exactMatchBehaviorUnchanged() {
-        CorrectAnswer correctAnswer = CorrectAnswer.builder().correctText("apple").build();
+    void noteCompletion_acceptsShortenedFormButNotSingleMinorWord() {
+        CorrectAnswer correctAnswer = CorrectAnswer.builder().correctText("every 30-60 minutes").build();
         Question question = questionOf(QuestionType.NOTE_COMPLETION, correctAnswer);
 
-        assertThat(gradingService.grade(answerOf("i love apple"), question)).isFalse();
-        assertThat(gradingService.grade(answerOf("apple"), question)).isTrue();
+        assertThat(gradingService.grade(answerOf("every 30-60 minutes"), question)).isTrue();
+        assertThat(gradingService.grade(answerOf("30-60 minutes"), question)).isTrue();
+        assertThat(gradingService.grade(answerOf("minutes"), question)).isFalse();
     }
 }

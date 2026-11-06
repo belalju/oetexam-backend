@@ -2,9 +2,12 @@ name: CI/CD
 
 on:
   push:
-    branches: [main]
+    # Every branch listed here is built AND deployed on push
+    branches: [main, feature/payment-integration]
   pull_request:
     branches: [main]
+  # Manual deploy of any branch: Actions → CI/CD → Run workflow → pick the branch
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
@@ -38,7 +41,8 @@ jobs:
     name: Docker Build & Push (GHCR)
     runs-on: ubuntu-latest
     needs: [build-and-test]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Pushes to the branches listed under on.push, or a manual dispatch of any branch — never PRs
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     permissions:
       contents: read
       packages: write
@@ -63,9 +67,10 @@ jobs:
         with:
           context: .
           push: true
+          # :latest only tracks main; feature-branch builds get just the SHA tag (which deploy uses)
           tags: |
-            ${{ env.IMAGE_NAME }}:latest
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ github.ref == 'refs/heads/main' && format('{0}:latest', env.IMAGE_NAME) || '' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
