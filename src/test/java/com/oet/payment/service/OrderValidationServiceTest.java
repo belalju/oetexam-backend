@@ -7,8 +7,10 @@ import com.oet.payment.dto.OrderValidationResponse;
 import com.oet.payment.dto.SslCommerzValidationResponse;
 import com.oet.payment.entity.Payment;
 import com.oet.payment.entity.PaymentStatus;
+import com.oet.payment.entity.PricingPackage;
 import com.oet.payment.exception.PaymentValidationException;
 import com.oet.payment.repository.PaymentRepository;
+import com.oet.user.entity.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,6 +37,9 @@ class OrderValidationServiceTest {
     private static final String TRAN_ID = "OETABC123";
     private static final String VAL_ID = "2410231234567abcdef";
     private static final String EMAIL = "applicant@example.com";
+    private static final PricingPackage GOLD = PricingPackage.builder()
+            .code("gold").name("Gold").price(new BigDecimal("54.99")).currency("USD")
+            .noOfAllowedTest(35).accessDays(60).build();
 
     @Mock
     private SslCommerzClient sslCommerzClient;
@@ -50,9 +55,12 @@ class OrderValidationServiceTest {
     void setUp() {
         service = new OrderValidationService(sslCommerzClient, paymentRepository, transactionTemplate);
         payment = Payment.builder()
+                .user(User.builder().email(EMAIL).build())
+                .pricingPackage(GOLD)
                 .transactionId(TRAN_ID)
                 .amount(new BigDecimal("1500.00"))
                 .currency("BDT")
+                .customerPhone("01700000000")
                 .status(PaymentStatus.PENDING)
                 .build();
         lenient().when(transactionTemplate.execute(any()))
@@ -87,6 +95,39 @@ class OrderValidationServiceTest {
         when(sslCommerzClient.validate(VAL_ID)).thenReturn(gatewayResponse("VALID", "1500.00", 1));
 
         assertThat(service.validateOrder(request(), EMAIL).status()).isEqualTo(PaymentStatus.ON_HOLD);
+        assertThat(payment.getUser().getTransactionId()).isNull();
+        assertThat(payment.getUser().getPaymentDateTime()).isNull();
+        assertThat(payment.getUser().getPackageExpirationDate()).isNull();
+        assertThat(payment.getUser().getPackageCode()).isNull();
+        assertThat(payment.getUser().getNoOfAllowedTest()).isNull();
+    }
+
+    @Test
+    void validateOrder_validTransaction_recordsPaymentOnUser() {
+        givenOwnedPayment();
+        when(sslCommerzClient.validate(VAL_ID)).thenReturn(gatewayResponse("VALID", "1500.00", 0));
+
+        service.validateOrder(request(), EMAIL);
+
+        User user = payment.getUser();
+        assertThat(user.getCustomerPhone()).isEqualTo("01700000000");
+        assertThat(user.getPaymentDateTime()).isEqualTo(payment.getValidatedAt()).isNotNull();
+        assertThat(user.getCurrency()).isEqualTo("BDT");
+        assertThat(user.getPricingPackage()).isSameAs(GOLD);
+        assertThat(user.getPackageCode()).isEqualTo("gold");
+        assertThat(user.getNoOfAllowedTest()).isEqualTo(35);
+        assertThat(user.getPackageExpirationDate()).isEqualTo(payment.getValidatedAt().plusDays(60));
+        assertThat(user.getTransactionId()).isEqualTo(TRAN_ID);
+    }
+
+    @Test
+    void validateOrder_invalidTransaction_leavesUserUnchanged() {
+        givenOwnedPayment();
+        when(sslCommerzClient.validate(VAL_ID)).thenReturn(gatewayResponse("INVALID_TRANSACTION", null, null));
+
+        assertThatThrownBy(() -> service.validateOrder(request(), EMAIL))
+                .isInstanceOf(PaymentValidationException.class);
+        assertThat(payment.getUser().getTransactionId()).isNull();
     }
 
     @Test

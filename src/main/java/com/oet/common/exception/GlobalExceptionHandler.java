@@ -82,6 +82,12 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(HttpStatus.FORBIDDEN.value(), ex.getMessage()));
     }
 
+    @ExceptionHandler(PackageAccessException.class)
+    public ResponseEntity<ApiResponse<Void>> handlePackageAccess(PackageAccessException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.error(HttpStatus.FORBIDDEN.value(), ex.getMessage()));
+    }
+
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiResponse<Void>> handleAccessDenied(AccessDeniedException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)

@@ -7,8 +7,10 @@ import com.oet.payment.dto.OrderValidationResponse;
 import com.oet.payment.dto.SslCommerzValidationResponse;
 import com.oet.payment.entity.Payment;
 import com.oet.payment.entity.PaymentStatus;
+import com.oet.payment.entity.PricingPackage;
 import com.oet.payment.exception.PaymentValidationException;
 import com.oet.payment.repository.PaymentRepository;
+import com.oet.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -89,6 +91,24 @@ public class OrderValidationService {
         payment.setRiskLevel(validation.riskLevel());
         payment.setRiskTitle(validation.riskTitle());
         payment.setValidatedAt(LocalDateTime.now());
+        if (payment.getStatus() == PaymentStatus.VALID) {
+            recordPaymentOnUser(payment);
+        }
+    }
+
+    // Runs inside updateIfPending's transaction, so the lazily loaded user is managed and saved on commit.
+    // ON_HOLD payments are skipped: service stays held until the risk review clears them.
+    private void recordPaymentOnUser(Payment payment) {
+        User user = payment.getUser();
+        user.setCustomerPhone(payment.getCustomerPhone());
+        user.setPaymentDateTime(payment.getValidatedAt());
+        user.setCurrency(payment.getCurrency());
+        PricingPackage pricingPackage = payment.getPricingPackage();
+        user.setPricingPackage(pricingPackage);
+        user.setPackageCode(pricingPackage.getCode());
+        user.setNoOfAllowedTest(pricingPackage.getNoOfAllowedTest());
+        user.setPackageExpirationDate(payment.getValidatedAt().plusDays(pricingPackage.getAccessDays()));
+        user.setTransactionId(payment.getTransactionId());
     }
 
     // Re-reads the payment under a row lock so concurrent IPN and redirect validations apply only once.

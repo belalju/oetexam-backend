@@ -14,6 +14,7 @@ import com.oet.payment.entity.PricingPackage;
 import com.oet.payment.exception.PaymentGatewayException;
 import com.oet.payment.exception.PaymentValidationException;
 import com.oet.payment.repository.PaymentRepository;
+import com.oet.payment.repository.PricingPackageRepository;
 import com.oet.user.entity.User;
 import com.oet.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -32,16 +33,18 @@ import java.util.UUID;
 public class PaymentService {
 
     private static final String TRANSACTION_ID_PREFIX = "OET";
+    private static final String PRODUCT_CATEGORY = "OET Practice";
 
     private final SslCommerzClient sslCommerzClient;
     private final SslCommerzProperties properties;
     private final PaymentRepository paymentRepository;
     private final UserRepository userRepository;
+    private final PricingPackageRepository pricingPackageRepository;
 
     // Not transactional: the gateway call must not hold a DB transaction open.
     public PaymentSessionResponse createSession(CreatePaymentSessionRequest request, String customerEmail) {
         PricingPackage pricingPackage = resolvePackage(request);
-        Payment payment = paymentRepository.save(newPendingPayment(pricingPackage, customerEmail));
+        Payment payment = paymentRepository.save(newPendingPayment(request, pricingPackage, customerEmail));
         String transactionId = payment.getTransactionId();
 
         SslCommerzSessionResponse response;
@@ -83,7 +86,7 @@ public class PaymentService {
 
     // The client's amount is only echoed back for comparison; the charge always uses the server price.
     private PricingPackage resolvePackage(CreatePaymentSessionRequest request) {
-        PricingPackage pricingPackage = PricingPackage.fromCode(request.packageId())
+        PricingPackage pricingPackage = pricingPackageRepository.findByCodeIgnoreCaseAndActiveTrue(request.packageId())
                 .orElseThrow(() -> new NotFoundException("Package not found: " + request.packageId()));
         String currency = StringUtils.hasText(request.currency()) ? request.currency() : pricingPackage.getCurrency();
         if (!pricingPackage.matches(request.amount(), currency)) {
@@ -94,7 +97,9 @@ public class PaymentService {
         return pricingPackage;
     }
 
-    private Payment newPendingPayment(PricingPackage pricingPackage, String customerEmail) {
+    private Payment newPendingPayment(CreatePaymentSessionRequest request,
+                                      PricingPackage pricingPackage,
+                                      String customerEmail) {
         User user = userRepository.findByEmail(customerEmail)
                 .orElseThrow(() -> new NotFoundException("User not found: " + customerEmail));
         return Payment.builder()
@@ -103,6 +108,12 @@ public class PaymentService {
                 .transactionId(generateTransactionId())
                 .amount(pricingPackage.getPrice())
                 .currency(pricingPackage.getCurrency())
+                .customerName(request.customerName())
+                .customerPhone(request.customerPhone())
+                .customerAddress(request.customerAddress())
+                .customerCity(request.customerCity())
+                .customerPostcode(request.customerPostcode())
+                .customerCountry(request.customerCountry())
                 .status(PaymentStatus.PENDING)
                 .build();
     }
@@ -134,8 +145,8 @@ public class PaymentService {
         params.add("cus_country", request.customerCountry());
         params.add("cus_phone", request.customerPhone());
         params.add("shipping_method", "NO");
-        params.add("product_name", pricingPackage.getDisplayName());
-        params.add("product_category", PricingPackage.PRODUCT_CATEGORY);
+        params.add("product_name", pricingPackage.getName());
+        params.add("product_category", PRODUCT_CATEGORY);
         params.add("product_profile", "non-physical-goods");
         params.add("value_a", customerEmail);
         return params;

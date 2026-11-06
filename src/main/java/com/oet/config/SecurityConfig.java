@@ -39,6 +39,7 @@ public class SecurityConfig {
 
     private static final String[] PUBLIC_PATHS = {
             "/api/auth/**",
+            "/api/packages",
             "/api/payments/ipn",
             "/api/payments/callback/**",
             "/swagger-ui.html",
@@ -89,6 +90,20 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+        UrlBasedCorsConfigurationSource source =
+            new UrlBasedCorsConfigurationSource();
+
+        // SSLCommerz endpoints first: the most specific match must be registered before "/**".
+        CorsConfiguration paymentGatewayConfig = paymentGatewayCorsConfiguration();
+        source.registerCorsConfiguration("/api/payments/callback/**", paymentGatewayConfig);
+        source.registerCorsConfiguration("/api/payments/ipn", paymentGatewayConfig);
+
+        source.registerCorsConfiguration("/**", frontendCorsConfiguration());
+
+        return source;
+    }
+
+    private CorsConfiguration frontendCorsConfiguration() {
         CorsConfiguration config = new CorsConfiguration();
 
         List<String> origins = Arrays.stream(allowedOrigins.split(","))
@@ -111,13 +126,23 @@ public class SecurityConfig {
 
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
+        return config;
+    }
 
-        UrlBasedCorsConfigurationSource source =
-            new UrlBasedCorsConfigurationSource();
-
-        source.registerCorsConfiguration("/**", config);
-
-        return source;
+    /**
+     * SSLCommerz form-POSTs the customer's browser to the callback URLs from its own domain
+     * (sandbox/securepay.sslcommerz.com, or Origin "null"). These endpoints are public,
+     * take no credentials, and every payment is re-verified server-side via the
+     * Order Validation API, so any origin is accepted here.
+     */
+    private CorsConfiguration paymentGatewayCorsConfiguration() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOriginPatterns(List.of("*"));
+        config.setAllowedMethods(List.of("GET", "POST", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(false);
+        config.setMaxAge(3600L);
+        return config;
     }
 
 }

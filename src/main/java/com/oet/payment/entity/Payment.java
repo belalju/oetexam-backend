@@ -45,8 +45,10 @@ public class Payment {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "package_code", length = 20)
+    // EAGER: tiny lookup table, needed whenever a payment is mapped to a response
+    // (open-in-view is off, so a lazy proxy would fail outside the transaction).
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "package_id")
     private PricingPackage pricingPackage;
 
     @Column(name = "transaction_id", nullable = false, unique = true, length = 30)
@@ -60,6 +62,24 @@ public class Payment {
 
     @Column(nullable = false, length = 3)
     private String currency;
+
+    @Column(name = "customer_name", length = 50)
+    private String customerName;
+
+    @Column(name = "customer_phone", length = 20)
+    private String customerPhone;
+
+    @Column(name = "customer_address", length = 50)
+    private String customerAddress;
+
+    @Column(name = "customer_city", length = 50)
+    private String customerCity;
+
+    @Column(name = "customer_postcode", length = 30)
+    private String customerPostcode;
+
+    @Column(name = "customer_country", length = 50)
+    private String customerCountry;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

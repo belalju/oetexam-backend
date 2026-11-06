@@ -47,6 +47,7 @@ public class UserService {
         return toDto(userRepository.save(user));
     }
 
+    // Package fields come from the user's payment-time snapshot, not the live package row.
     private UserProfileDto toDto(User user) {
         return new UserProfileDto(
                 user.getId(),
@@ -56,7 +57,10 @@ public class UserService {
                 user.getRole(),
                 user.getProfession(),
                 user.isActive(),
-                user.getCreatedAt()
+                user.getCreatedAt(),
+                user.getPackageCode(),
+                user.getNoOfAllowedTest(),
+                user.getPackageExpirationDate()
         );
     }
 }

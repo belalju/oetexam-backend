@@ -58,7 +58,7 @@ app:
   frontend:
     base-url: ${FRONTEND_BASE_URL:http://localhost:4200}
   backend:
-    base-url: ${BACKEND_BASE_URL:http://localhost:8080}
+    base-url: ${BACKEND_BASE_URL:https://oet.belalhossain.dev}
   payment:
     sslcommerz:
       # Sandbox: https://sandbox.sslcommerz.com | Live: https://securepay.sslcommerz.com
@@ -70,7 +70,7 @@ app:
       fail-url: ${SSLCOMMERZ_FAIL_URL:${app.backend.base-url}/api/payments/callback/fail}
       cancel-url: ${SSLCOMMERZ_CANCEL_URL:${app.backend.base-url}/api/payments/callback/cancel}
       result-page-url: ${SSLCOMMERZ_RESULT_PAGE_URL:${app.frontend.base-url}/payment}
-      ipn-url: ${SSLCOMMERZ_IPN_URL:https://sandbox-gw.sslcommerz.com/ipn}
+      ipn-url: ${SSLCOMMERZ_IPN_URL:${app.backend.base-url}/api/payments/ipn}
       connect-timeout: 10s
       read-timeout: 30s
 

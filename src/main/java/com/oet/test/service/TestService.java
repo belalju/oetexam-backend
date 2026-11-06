@@ -49,6 +49,7 @@ public class TestService {
     private final QuestionGroupRepository questionGroupRepository;
     private final UserRepository userRepository;
     private final MediaStorageService mediaStorageService;
+    private final TestAccessService testAccessService;
 
     // ── Admin operations ────────────────────────────────────────────────
 
@@ -280,25 +281,40 @@ public class TestService {
 
     // ── Applicant operations ──────────────────────────────────────────────
 
+    // Applicants see only the tests their package unlocks; admins see every published test.
     @Transactional(readOnly = true)
-    public Page<TestSummaryResponse> listPublishedTests(SubTestType subTestType, Pageable pageable) {
-        Page<OetTest> tests = subTestType == null
-                ? testRepository.findAllByPublishedTrue(pageable)
-                : testRepository.findAllByPublishedTrueAndSubTestType(subTestType, pageable);
-        return tests.map(this::toSummary);
+    public Page<TestSummaryResponse> listPublishedTests(SubTestType subTestType, Pageable pageable, String userEmail) {
+        User user = findUserByEmail(userEmail);
+        if (testAccessService.isUnrestricted(user)) {
+            Page<OetTest> tests = subTestType == null
+                    ? testRepository.findAllByPublishedTrue(pageable)
+                    : testRepository.findAllByPublishedTrueAndSubTestType(subTestType, pageable);
+            return tests.map(this::toSummary);
+        }
+        List<Long> accessibleIds = testAccessService.accessibleTestIds(user, subTestType);
+        if (accessibleIds.isEmpty()) {
+            return Page.empty(pageable);
+        }
+        return testRepository.findAllByIdIn(accessibleIds, pageable).map(this::toSummary);
     }
 
     @Transactional(readOnly = true)
-    public TestDetailResponse getTestForApplicant(Long testId) {
+    public TestDetailResponse getTestForApplicant(Long testId, String userEmail) {
         OetTest test = testRepository.findWithFullDetailById(testId)
                 .orElseThrow(() -> new NotFoundException("Test not found: " + testId));
         if (!test.isPublished()) {
             throw new BusinessException("Test is not available");
         }
+        testAccessService.assertCanAccess(findUserByEmail(userEmail), test);
         return toDetail(test, false);
     }
 
     // ── Private helpers ───────────────────────────────────────────────────
+
+    private User findUserByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+    }
 
     private OetTest findTestById(Long id) {
         return testRepository.findById(id)

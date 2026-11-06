@@ -7,6 +7,8 @@ import com.oet.payment.dto.OrderValidationResponse;
 import com.oet.payment.dto.PaymentIpnResponse;
 import com.oet.payment.dto.PaymentSessionDetailsResponse;
 import com.oet.payment.dto.PaymentSessionResponse;
+import com.oet.payment.entity.GatewayEventType;
+import com.oet.payment.service.GatewayResponseRecorder;
 import com.oet.payment.service.OrderValidationService;
 import com.oet.payment.service.PaymentCallbackService;
 import com.oet.payment.service.PaymentIpnService;
@@ -15,6 +17,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -30,8 +33,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
+import java.time.OffsetDateTime;
 import java.util.Map;
 
+@Slf4j
 @Validated
 @RestController
 @RequestMapping("/api/payments")
@@ -42,6 +47,7 @@ public class PaymentController {
     private final PaymentIpnService paymentIpnService;
     private final OrderValidationService orderValidationService;
     private final PaymentCallbackService paymentCallbackService;
+    private final GatewayResponseRecorder gatewayResponseRecorder;
 
     @PostMapping("/sessions")
     public ResponseEntity<ApiResponse<PaymentSessionResponse>> createSession(
@@ -78,6 +84,7 @@ public class PaymentController {
      */
     @PostMapping(value = "/ipn", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public ResponseEntity<ApiResponse<PaymentIpnResponse>> handleIpn(@RequestParam Map<String, String> ipnParams) {
+        logGatewayCall(GatewayEventType.IPN, ipnParams);
         return ResponseEntity.ok(ApiResponse.success(paymentIpnService.handleIpn(ipnParams)));
     }
 
@@ -87,17 +94,44 @@ public class PaymentController {
      */
     @PostMapping(value = "/callback/success", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public ResponseEntity<Void> successCallback(@RequestParam Map<String, String> params) {
+        logGatewayCall(GatewayEventType.SUCCESS_CALLBACK, params);
         return seeOther(paymentCallbackService.handleSuccess(params));
     }
 
     @PostMapping(value = "/callback/fail", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public ResponseEntity<Void> failCallback(@RequestParam Map<String, String> params) {
+        logGatewayCall(GatewayEventType.FAIL_CALLBACK, params);
         return seeOther(paymentCallbackService.handleFail(params));
     }
 
     @PostMapping(value = "/callback/cancel", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public ResponseEntity<Void> cancelCallback(@RequestParam Map<String, String> params) {
+        logGatewayCall(GatewayEventType.CANCEL_CALLBACK, params);
         return seeOther(paymentCallbackService.handleCancel(params));
+    }
+
+    /**
+     * Public diagnostic endpoint: returns the server's current date-time so the domain
+     * routing to this backend can be checked from a browser.
+     */
+    @GetMapping("/callback/redirect-test")
+    public ResponseEntity<ApiResponse<OffsetDateTime>> redirectTest() {
+        return ResponseEntity.ok(ApiResponse.success(OffsetDateTime.now()));
+    }
+
+    /**
+     * Stores the full SSLCommerz payload as JSON, then logs only non-sensitive identifiers;
+     * card and customer fields are deliberately left out of the log.
+     */
+    private void logGatewayCall(GatewayEventType endpoint, Map<String, String> params) {
+        gatewayResponseRecorder.recordPayload(endpoint, params);
+        log.info("SSLCommerz {} received: tran_id={}, val_id={}, status={}, amount={}, currency={}",
+                endpoint,
+                params.get("tran_id"),
+                params.get("val_id"),
+                params.get("status"),
+                params.get("amount"),
+                params.get("currency"));
     }
 
     private ResponseEntity<Void> seeOther(URI location) {

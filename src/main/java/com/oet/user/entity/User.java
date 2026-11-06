@@ -1,13 +1,17 @@
 package com.oet.user.entity;
 
+import com.oet.payment.entity.PricingPackage;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -68,6 +72,34 @@ public class User {
     @Column(name = "email_verified", nullable = false)
     @Builder.Default
     private boolean emailVerified = false;
+
+    // Latest successful payment, set when a payment is validated as VALID.
+    @Column(name = "customer_phone", length = 20)
+    private String customerPhone;
+
+    @Column(name = "payment_date_time")
+    private LocalDateTime paymentDateTime;
+
+    @Column(name = "currency", length = 3)
+    private String currency;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pricing_package_id")
+    private PricingPackage pricingPackage;
+
+    // Snapshot of the package at payment time; unaffected by later package edits.
+    @Column(name = "package_code", length = 20)
+    private String packageCode;
+
+    @Column(name = "no_of_allowed_test")
+    private Integer noOfAllowedTest;
+
+    // paymentDateTime + pricingPackage.accessDays; access ends at this instant.
+    @Column(name = "package_expiration_date")
+    private LocalDateTime packageExpirationDate;
+
+    @Column(name = "transaction_id", length = 30)
+    private String transactionId;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

@@ -10,6 +10,7 @@ import com.oet.payment.entity.Payment;
 import com.oet.payment.entity.PricingPackage;
 import com.oet.payment.exception.PaymentValidationException;
 import com.oet.payment.repository.PaymentRepository;
+import com.oet.payment.repository.PricingPackageRepository;
 import com.oet.user.entity.User;
 import com.oet.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,12 +23,15 @@ import org.springframework.util.MultiValueMap;
 
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -43,6 +47,11 @@ class PaymentServiceTest {
     private PaymentRepository paymentRepository;
     @Mock
     private UserRepository userRepository;
+    @Mock
+    private PricingPackageRepository pricingPackageRepository;
+
+    private final PricingPackage silver = pricingPackage("silver", "Silver", "39.99");
+    private final PricingPackage gold = pricingPackage("gold", "Gold", "54.99");
 
     private PaymentService service;
 
@@ -52,7 +61,12 @@ class PaymentServiceTest {
                 "https://sandbox.sslcommerz.com", "store", "secret",
                 "https://app/success", "https://app/fail", "https://app/cancel", "https://app/payment", null,
                 Duration.ofSeconds(10), Duration.ofSeconds(30));
-        service = new PaymentService(sslCommerzClient, properties, paymentRepository, userRepository);
+        service = new PaymentService(sslCommerzClient, properties, paymentRepository, userRepository,
+                pricingPackageRepository);
+        Map<String, PricingPackage> activePackages = Map.of("silver", silver, "gold", gold);
+        lenient().when(pricingPackageRepository.findByCodeIgnoreCaseAndActiveTrue(anyString()))
+                .thenAnswer(invocation -> Optional.ofNullable(
+                        activePackages.get(invocation.<String>getArgument(0).toLowerCase())));
     }
 
     @Test
@@ -67,14 +81,20 @@ class PaymentServiceTest {
         assertThat(response.gatewayPageUrl()).isEqualTo("https://gateway/pay");
         ArgumentCaptor<Payment> saved = ArgumentCaptor.forClass(Payment.class);
         verify(paymentRepository, atLeastOnce()).save(saved.capture());
-        assertThat(saved.getValue().getPricingPackage()).isEqualTo(PricingPackage.SILVER);
+        assertThat(saved.getValue().getPricingPackage()).isSameAs(silver);
         assertThat(saved.getValue().getAmount()).isEqualByComparingTo("39.99");
+        assertThat(saved.getValue().getCustomerName()).isEqualTo("Jane Doe");
+        assertThat(saved.getValue().getCustomerPhone()).isEqualTo("01700000000");
+        assertThat(saved.getValue().getCustomerAddress()).isEqualTo("House 1, Road 2");
+        assertThat(saved.getValue().getCustomerCity()).isEqualTo("Dhaka");
+        assertThat(saved.getValue().getCustomerPostcode()).isEqualTo("1207");
+        assertThat(saved.getValue().getCustomerCountry()).isEqualTo("Bangladesh");
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<MultiValueMap<String, String>> params = ArgumentCaptor.forClass(MultiValueMap.class);
         verify(sslCommerzClient).createSession(params.capture());
         assertThat(params.getValue().getFirst("total_amount")).isEqualTo("39.99");
-        assertThat(params.getValue().getFirst("product_name")).isEqualTo("Silver Package");
+        assertThat(params.getValue().getFirst("product_name")).isEqualTo("Silver");
     }
 
     @Test
@@ -95,6 +115,17 @@ class PaymentServiceTest {
     void createSession_unknownPackage_throwsNotFound() {
         assertThatThrownBy(() -> service.createSession(request("platinum", "99.99", "USD"), EMAIL))
                 .isInstanceOf(NotFoundException.class);
+    }
+
+    private static PricingPackage pricingPackage(String code, String name, String price) {
+        return PricingPackage.builder()
+                .code(code)
+                .name(name)
+                .price(new BigDecimal(price))
+                .currency("USD")
+                .noOfAllowedTest(15)
+                .accessDays(30)
+                .build();
     }
 
     private CreatePaymentSessionRequest request(String packageId, String amount, String currency) {

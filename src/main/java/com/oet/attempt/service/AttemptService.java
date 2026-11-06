@@ -20,6 +20,7 @@ import com.oet.test.entity.QuestionOption;
 import com.oet.test.repository.QuestionOptionRepository;
 import com.oet.test.repository.QuestionRepository;
 import com.oet.test.repository.TestRepository;
+import com.oet.test.service.TestAccessService;
 import com.oet.test.service.TestService;
 import com.oet.user.entity.User;
 import com.oet.user.repository.UserRepository;
@@ -50,6 +51,7 @@ public class AttemptService {
     private final UserRepository userRepository;
     private final GradingService gradingService;
     private final TestService testService;
+    private final TestAccessService testAccessService;
 
     @Transactional
     public StartAttemptResponse startAttempt(Long testId, String userEmail) {
@@ -60,6 +62,7 @@ public class AttemptService {
         if (!test.isPublished()) {
             throw new BusinessException("Test is not published");
         }
+        testAccessService.assertCanAccess(user, test);
 
 //        // Check for existing in-progress attempt
 //        boolean hasActive = attemptRepository
