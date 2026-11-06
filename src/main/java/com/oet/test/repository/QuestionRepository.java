@@ -12,8 +12,9 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
             SELECT q FROM Question q
             LEFT JOIN FETCH q.correctAnswer ca
             LEFT JOIN FETCH ca.correctOption
-            JOIN q.questionGroup qg JOIN qg.testPart tp
+            JOIN FETCH q.questionGroup qg JOIN FETCH qg.testPart tp
             WHERE tp.test.id = :testId
+            ORDER BY tp.sortOrder, tp.partLabel, q.questionNumber
             """)
     List<Question> findAllByTestIdWithCorrectAnswers(Long testId);
 

@@ -33,7 +33,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -178,7 +177,6 @@ public class AttemptService {
                 .collect(Collectors.toMap(a -> a.getQuestion().getId(), a -> a));
 
         List<AttemptAnswerResult> answerResults = questions.stream()
-                .sorted(Comparator.comparing(Question::getQuestionNumber))
                 .map(q -> toAnswerResult(q, answersByQuestionId.get(q.getId())))
                 .toList();
 
@@ -283,6 +281,7 @@ public class AttemptService {
 
         return new AttemptAnswerResult(
                 q.getId(),
+                q.getQuestionGroup().getTestPart().getPartLabel(),
                 q.getQuestionNumber(),
                 q.getQuestionText(),
                 q.getPrefixText(),
