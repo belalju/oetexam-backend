@@ -15,6 +15,12 @@ app:
     secret: ${JWT_SECRET:dev-secret-key-must-be-at-least-256-bits-long-for-hs256-algorithm}
     access-token-expiration-ms: 3600000
     refresh-token-expiration-ms: 604800000
+  backend:
+    base-url: ${BACKEND_BASE_URL:http://localhost:8080}
+  payment:
+    sslcommerz:
+      # Dev always targets the sandbox; store credentials come from .env (never committed)
+      base-url: ${SSLCOMMERZ_BASE_URL:https://sandbox.sslcommerz.com}
 
 logging:
   level:

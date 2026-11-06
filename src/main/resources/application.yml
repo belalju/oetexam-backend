@@ -58,13 +58,15 @@ app:
   frontend:
     base-url: ${FRONTEND_BASE_URL:http://localhost:4200}
   backend:
-    base-url: ${BACKEND_BASE_URL:https://oet.belalhossain.dev}
+    # Required: public URL of this backend (SSLCommerz callbacks and IPN are built from it)
+    base-url: ${BACKEND_BASE_URL}
   payment:
     sslcommerz:
       # Sandbox: https://sandbox.sslcommerz.com | Live: https://securepay.sslcommerz.com
-      base-url: ${SSLCOMMERZ_BASE_URL:https://sandbox.sslcommerz.com}
-      store-id: ${SSLCOMMERZ_STORE_ID:deenc6abe156d48922}
-      store-password: ${SSLCOMMERZ_STORE_PASSWORD:deenc6abe156d48922@ssl}
+      # No defaults on purpose: a missing value must fail startup, never silently fall back to sandbox
+      base-url: ${SSLCOMMERZ_BASE_URL}
+      store-id: ${SSLCOMMERZ_STORE_ID}
+      store-password: ${SSLCOMMERZ_STORE_PASSWORD}
       # SSLCommerz form-POSTs the customer's browser here; the backend then redirects to result-page-url.
       success-url: ${SSLCOMMERZ_SUCCESS_URL:${app.backend.base-url}/api/payments/callback/success}
       fail-url: ${SSLCOMMERZ_FAIL_URL:${app.backend.base-url}/api/payments/callback/fail}
